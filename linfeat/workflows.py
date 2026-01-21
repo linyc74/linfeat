@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from typing import List, Optional
+from .matrix import CorrelationMatrix
 from .linear import LinearL1FeatureSelection, LinearStepwiseFeatureSelection
 from .logistic import LogisticL1FeatureSelection, LogisticStepwiseFeatureSelection
 from .basic import Parameters, PrepareData, is_binary, summarize_numeric_outcome, summarize_binary_outcome
@@ -24,6 +25,12 @@ def linfeat(
     os.makedirs(parameters.outdir, exist_ok=True)
 
     df = PrepareData().main(df=df, features=features, outcome=outcome)
+
+    for method in ['pearson', 'spearman']:
+        CorrelationMatrix().main(
+            df=df,
+            parameters=parameters,
+            method=method)
 
     core_features = [] if stepwise_core_features is None else stepwise_core_features
 

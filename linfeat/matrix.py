@@ -4,47 +4,48 @@ import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
 from typing import Tuple
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import linkage, leaves_list
 from statsmodels.stats.multitest import multipletests
+from .basic import Parameters
 
 
 P_VALUE_CORRECTION = 'fdr_bh'  # Benjamini-Hochberg
 FDR = 0.05
-COLORMAP = 'bwr_r'
-LINEWIDTHS = 0.5
-LINECOLOR = 'white'
-COLOR_BAR_LABEL = 'Pearson correlation coefficient'
-FIGSIZE = (22 / 2.54, 18 / 2.54)  # width, height (cm / 2.54)
-DPI = 600
-FONT_PROPERTIES = {
-    'size': 7,
-    'family': 'Microsoft JhengHei',
-}
-AXES_PROPERTIES = {
-    'unicode_minus': False,  # show minus sign correctly when Chinese font is used
-}
 
 
-class PearsonMatrix:
+class CorrelationMatrix:
 
     df: pd.DataFrame
+    parameters: Parameters
+    method: str
+
     corr_df: pd.DataFrame
     p_value_df: pd.DataFrame
 
-    def main(self, df: pd.DataFrame):
+    def main(self, df: pd.DataFrame, parameters: Parameters, method: str = 'pearson'):
         self.df = df.copy()
+        self.parameters = parameters
+        self.method = method
 
-        self.compute_pearson_correlation()
+        self.compute_correlation()
         self.correct_p_values()
         self.reorder_samples_by_hierarchical_clustering()
         self.mask_by_p_value()
-        self.corr_df.to_csv(f'pearson_correlation_matrix.csv', encoding='utf-8-sig')
-        self.p_value_df.to_csv(f'pearson_p_value_adjusted_matrix.csv', encoding='utf-8-sig')
+        self.corr_df.to_csv(f'{self.parameters.outdir}/{self.method}_correlation_matrix.csv', encoding='utf-8-sig')
+        self.p_value_df.to_csv(f'{self.parameters.outdir}/{self.method}_p_value_adjusted_matrix.csv', encoding='utf-8-sig')
         self.plot_heatmap()
 
-    def compute_pearson_correlation(self):
+    def compute_correlation(self):
+
+        if self.method == 'pearson':
+            func = pearsonr
+        elif self.method == 'spearman':
+            func = spearmanr
+        else:
+            raise ValueError(f'Invalid correlation method: {self.method}')
+
         columns = self.df.columns
         corr_df = pd.DataFrame(index=columns, columns=columns)
         p_value_df = pd.DataFrame(index=columns, columns=columns)
@@ -55,7 +56,7 @@ class PearsonMatrix:
                     corr_df.loc[col1, col2] = 1.0
                     p_value_df.loc[col1, col2] = 0.0
                 else:
-                    correlation, p_value = pearsonr(self.df[col1], self.df[col2])
+                    correlation, p_value = func(self.df[col1], self.df[col2])
                     corr_df.loc[col1, col2] = correlation
                     p_value_df.loc[col1, col2] = p_value
 
@@ -90,28 +91,58 @@ class PearsonMatrix:
         self.corr_df = self.corr_df.mask(self.p_value_df > FDR).fillna(0)
 
     def plot_heatmap(self):
-        matplotlib.rc('font', **FONT_PROPERTIES)
-        matplotlib.rc('axes', **AXES_PROPERTIES)
-        plt.figure(figsize=FIGSIZE, dpi=DPI)
-        sns.heatmap(
-            self.corr_df,
-            cmap=COLORMAP,
-            vmax=1,
-            vmin=-1,
-            xticklabels=True,  # include every x label
-            yticklabels=True,  # include every y label
-            annot=False,
-            linewidths=LINEWIDTHS,
-            linecolor=LINECOLOR,
-            cbar_kws={
-                'label': COLOR_BAR_LABEL,
-                'shrink': 0.5,
-                'aspect': 20  # make color bar thinner
-            }
-        )
-        plt.tight_layout()
-        plt.savefig(f'pearson_correlation_matrix.png', dpi=DPI)
-        plt.close()
+        matplotlib.rc('font', size=7)
+        for name in self.df.columns:
+            if contains_chinese(name):
+                matplotlib.rc('font', family='Microsoft JhengHei')
+                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
+                break
+        
+        for with_color_bar in [True, False]:
+            figsize = self.__get_figsize(with_color_bar=with_color_bar)
+            plt.figure(figsize=figsize, dpi=600)
+            sns.heatmap(
+                self.corr_df,
+                cmap='bwr_r',
+                vmax=1,
+                vmin=-1,
+                xticklabels=True,  # include every x label
+                yticklabels=True,  # include every y label
+                annot=False,
+                linewidths=0.5,
+                linecolor='white',
+                cbar=with_color_bar,
+                cbar_kws={
+                    'label': f'{self.method.capitalize()} correlation coefficient',
+                    'shrink': 0.25,
+                    'aspect': 15  # make color bar thinner
+                }
+            )
+            plt.tight_layout()
+            suffix = '_with_color_bar' if with_color_bar else ''
+            plt.savefig(f'{self.parameters.outdir}/{self.method}_correlation_matrix{suffix}.png', dpi=600)
+            plt.close()
+    
+    def __get_figsize(self, with_color_bar: bool) -> Tuple[float, float]:
+        char_width = 0.1219  # cm at font size 7
+        cell_size = 0.3341  # cm
+        color_bar_width = 3.6 if with_color_bar else 0  # cm
+        marginal_padding = 0.4  # cm
+        
+        n_features = len(self.df.columns)
+        matrix_size = n_features * cell_size
+
+        longest_feature_name = max(len(name) for name in self.df.columns)
+        feature_name_padding = longest_feature_name * char_width
+        
+        width = matrix_size + feature_name_padding + marginal_padding + color_bar_width
+        height = matrix_size + feature_name_padding + marginal_padding
+
+        return width / 2.54, height / 2.54
+
+
+def contains_chinese(s: str) -> bool:
+    return any('\u4e00' <= ch <= '\u9fff' for ch in s)
 
 
 class ReorderSamplesByHierarchicalClustering:
