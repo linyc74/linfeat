@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List
+from typing import List, Iterable, Any
 
 
 class Parameters:
@@ -42,11 +42,18 @@ class PrepareData:
         self.outcome = outcome
 
         self.df = self.df[[self.outcome] + self.features]
+        self.drop_samples_without_outcome()
         has_missing_values = self.check_missing_values()
         if has_missing_values:
             self.fill_missing_values()
 
         return self.df
+
+    def drop_samples_without_outcome(self):
+        indexes_without_outcome = self.df[self.df[self.outcome].isna()].index
+        s = 's' if len(indexes_without_outcome) > 1 else ''
+        print(f'Dropping {len(indexes_without_outcome)} sample{s} without outcome: {", ".join(indexes_without_outcome)}\n')
+        self.df = self.df[self.df[self.outcome].notna()]
 
     def check_missing_values(self) -> bool:
         d = {}
@@ -72,3 +79,35 @@ class PrepareData:
         for column in numeric_columns:
             if self.df[column].isna().sum() > 0:
                 self.df[column].fillna(self.df[column].mean(), inplace=True)
+
+
+def is_binary(series: Iterable[Any]) -> bool:
+    """
+    A binary series should only contain 0 and 1. Anything else encountered will be considered as not binary.
+    """
+    for v in series:
+        if pd.isna(v):
+            continue  # ignore missing values
+        if type(v) is str:
+            return False
+        elif type(v) is int or type(v) is float:
+            if v != 0 and v != 1:
+                return False
+        else:
+            return False
+    return True
+
+
+def summarize_numeric_outcome(df: pd.DataFrame, outcome: str):
+    print(f'Outcome: "{outcome}"')  
+    stats_str = df[outcome].describe().to_string()
+    indented_stats = '\n'.join('- ' + line for line in stats_str.split('\n'))
+    print(f'Summary statistics:\n{indented_stats}\n')
+
+
+def summarize_binary_outcome(df: pd.DataFrame, outcome: str):
+    print(f'Outcome: "{outcome}"')
+    n_pos = df[outcome].value_counts()[1]
+    n_neg = df[outcome].value_counts()[0]
+    print(f'Positive(1): {n_pos} ({n_pos / len(df) * 100:.2f}%)')
+    print(f'Negative(0): {n_neg} ({n_neg / len(df) * 100:.2f}%)\n')

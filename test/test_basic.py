@@ -1,6 +1,7 @@
+import numpy as np
 import pandas as pd
 from test.setup import TestCase
-from linfeat.basic import PrepareData
+from linfeat.basic import PrepareData, is_binary
 
 
 class TestPrepareData(TestCase):
@@ -19,3 +20,12 @@ class TestPrepareData(TestCase):
         )
         expected = pd.read_csv(f'{self.indir}/result.csv', index_col=0)
         self.assertDataFrameEqual(actual, expected)
+
+
+class TestFunctions(TestCase):
+
+    def test_is_binary(self):
+        self.assertTrue(is_binary([0, 1]))
+        self.assertTrue(is_binary([0, 1, np.nan]))
+        self.assertFalse(is_binary(['0', '1']))
+        self.assertFalse(is_binary([0, 1, 2]))

@@ -1,7 +1,3 @@
-"""
-python setup.py sdist && rm -r linfeat.egg-info
-"""
-
 from setuptools import setup, find_packages
 
 
@@ -30,3 +26,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # To build the package:
+    # python setup.py sdist && rm -r linfeat.egg-info

@@ -1,49 +1,17 @@
-import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from typing import List, Sequence, Dict, Tuple
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Lasso, Ridge, LinearRegression
-from typing import List, Sequence, Dict, Optional, Tuple
-from .basic import Parameters, PrepareData
+from .basic import Parameters
+
 
 import builtins
 from functools import partial
 print = partial(builtins.print, flush=True)  # always flush the output
-
-
-def linear_feature_selection(
-        df: pd.DataFrame,
-        features: List[str],
-        outcome: str,
-        stepwise_core_features: Optional[List[str]] = None,
-        parameters: Optional[Parameters] = None):
-    
-    if parameters is None:
-        parameters = Parameters()
-
-    os.makedirs(parameters.outdir, exist_ok=True)
-
-    df = PrepareData().main(df=df, features=features, outcome=outcome)
-    
-    LinearL1FeatureSelection().main(
-        df=df,
-        features=features,
-        outcome=outcome,
-        parameters=parameters
-    )
-
-    core_features=[] if stepwise_core_features is None else stepwise_core_features
-    
-    LinearStepwiseFeatureSelection().main(
-        df=df,
-        core_features=core_features,
-        candidate_features=[c for c in df.columns if c not in [outcome] + core_features],
-        outcome=outcome,
-        parameters=parameters
-    )
 
 
 class LinearL1FeatureSelection:
