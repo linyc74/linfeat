@@ -70,7 +70,7 @@ class CorrelationMatrix:
 
         pvals = self.p_value_df.values.reshape(n_features ** 2)  # 2D -> 1D
 
-        rejected, pvals_corrected, _, _ = multipletests(
+        _, pvals_corrected, _, _ = multipletests(
             pvals,
             alpha=FDR,
             method=P_VALUE_CORRECTION,

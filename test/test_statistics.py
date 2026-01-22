@@ -9,8 +9,8 @@ class TestStatistics(TestCase):
     def setUp(self):
         self.set_up(py_path=__file__)
         
-    # def tearDown(self):
-    #     self.tear_down()
+    def tearDown(self):
+        self.tear_down()
     
     def test_main(self):
         parameters = Parameters()
@@ -19,7 +19,7 @@ class TestStatistics(TestCase):
             df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
             features=[
                 'Binary Factor 1',
-                'Binary Factor 2',
+                '二元因子 2',
                 'Binary Factor 3',
                 'Parabacteroides_goldsteinii',
                 'Muribaculum_intestinale',
@@ -27,7 +27,7 @@ class TestStatistics(TestCase):
                 'Thomasclavelia',
                 'Lachnospiraceae',
                 'Faecalibaculum_rodentium',
-                'Blautia',
+                'Blautia 菌屬',
                 'Lachnoclostridium',
                 'Erysipelotrichaceae',
                 'Lactobacillus_johnsonii',

@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from typing import List, Optional
+from .statistics import Statistics
 from .matrix import CorrelationMatrix
 from .linear import LinearL1FeatureSelection, LinearStepwiseFeatureSelection
 from .logistic import LogisticL1FeatureSelection, LogisticStepwiseFeatureSelection
@@ -24,7 +25,16 @@ def linfeat(
 
     os.makedirs(parameters.outdir, exist_ok=True)
 
+    if is_binary(df[outcome]):
+        Statistics().main(  # run statistical tests before filling any missing values
+            df=df,
+            features=features,
+            outcome=outcome,
+            parameters=parameters
+        )
+
     df = PrepareData().main(df=df, features=features, outcome=outcome)
+    df.to_csv(f'{parameters.outdir}/missing_values_filled_data.csv', encoding='utf-8-sig', index=False)
 
     for method in ['pearson', 'spearman']:
         CorrelationMatrix().main(

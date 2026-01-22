@@ -1,10 +1,20 @@
+import os
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-from typing import List, Tuple
-from scipy.stats import mannwhitneyu
+from copy import deepcopy
+from typing import List, Tuple, Dict, Any
+from scipy.stats import mannwhitneyu, fisher_exact
+from statsmodels.stats.multitest import multipletests
 from .basic import Parameters, is_binary
+
+
+BINARY_OUTCOME_COLORS = [
+    (0.8, 0.8, 0.8, 1.0),  # negative (0) light gray
+    (0.4, 0.4, 0.4, 1.0),  # positive (1) dark gray
+]
 
 
 class Statistics:
@@ -13,6 +23,9 @@ class Statistics:
     features: List[str]
     outcome: str
     parameters: Parameters
+
+    stats_data: List[Dict[str, Any]]
+    stats_df: pd.DataFrame
 
     def main(
             self,
@@ -24,90 +37,214 @@ class Statistics:
         self.df = df
         self.features = features
         self.outcome = outcome
-        self.parameters = parameters
+        self.parameters = deepcopy(parameters)
+
+        os.makedirs(self.parameters.outdir, exist_ok=True)
 
         assert is_binary(self.df[self.outcome]), 'Outcome must be binary'
-        
+
+        self.stats_data = []
         for feature in self.features:
             if is_binary(self.df[feature]):
-                ComputeStatisticsForBinaryFeature().main(
-                    df=self.df,
-                    feature=feature,
-                    outcome=self.outcome,
-                    parameters=self.parameters)
+                self.binary_feature(feature)
             else:
-                ComputeStatisticsForNumericFeature().main(
-                    df=self.df,
-                    feature=feature,
-                    outcome=self.outcome,
-                    parameters=self.parameters)
-    
+                self.numeric_feature(feature)
 
-class ComputeStatisticsForBinaryFeature:
-
-    df: pd.DataFrame
-    feature: str
-    outcome: str
-    parameters: Parameters
-
-    def main(
-            self,
-            df: pd.DataFrame,
-            feature: str,
-            outcome: str,
-            parameters: Parameters):
+        self.stats_df = pd.DataFrame(self.stats_data)
+        self.correct_p_values()
+        self.stats_df.to_csv(f'{self.parameters.outdir}/statistics.csv', encoding='utf-8-sig', index=False)
         
-        self.df = df
-        self.feature = feature
-        self.outcome = outcome
-        self.parameters = parameters
+    def binary_feature(self, feature: str):
+        self.df = self.df[self.df[feature].notna() & self.df[self.outcome].notna()]
 
-        self.df = self.df[self.df[self.feature].notna() & self.df[self.outcome].notna()]
-
-
-class ComputeStatisticsForNumericFeature:
+        count_df = CreateCountDataFrame().main(
+            df=self.df,
+            x=feature,
+            y=self.outcome
+        )
+        pvalue = fisher_exact(count_df).pvalue
+        self.stats_data.append({
+            'Feature': feature,
+            'Feature type': 'Binary',
+            'Statistic': 'Fisher\'s Exact Test',
+            'P value': pvalue,
+        })
+        outdir = f'{self.parameters.outdir}/binary_features'
+        os.makedirs(outdir, exist_ok=True)
+        StackedBarPlot().main(
+            count_df=count_df,
+            title=f'$p < 0.001$' if pvalue < 0.001 else f'$p = {pvalue:.3f}$',
+            png=f'{outdir}/{feature}.png'
+        )
     
-    BINARY_COLORS = [
-        (0.8, 0.8, 0.8, 1.0),  # negative (0) light gray
-        (0.4, 0.4, 0.4, 1.0),  # positive (1) dark gray
-    ]
-    
-    df: pd.DataFrame
-    feature: str
-    outcome: str
-    parameters: Parameters
+    def numeric_feature(self, feature: str):
+        self.df = self.df[self.df[feature].notna() & self.df[self.outcome].notna()]
 
-    def main(
-            self,
-            df: pd.DataFrame,
-            feature: str,
-            outcome: str,
-            parameters: Parameters):
-        
-        self.df = df
-        self.feature = feature
-        self.outcome = outcome
-        self.parameters = parameters
-
-        self.df = self.df[self.df[self.feature].notna() & self.df[self.outcome].notna()]
-        self.df.sort_values(by=self.outcome, inplace=True)  # negative (0) first, positive (1) second
+        self.df.sort_values(by=self.outcome, inplace=True, ascending=True)  # negative (0) first, positive (1) second
 
         negative = self.df[self.outcome] == 0
         positive = self.df[self.outcome] == 1
 
         statistic, pvalue = mannwhitneyu(
-            x=self.df.loc[negative, self.feature],
-            y=self.df.loc[positive, self.feature]
+            x=self.df.loc[negative, feature],
+            y=self.df.loc[positive, feature]
         )
-
+        self.stats_data.append({
+            'Feature': feature,
+            'Feature type': 'Numeric',
+            'Statistic': 'Mann-Whitney U test',
+            'P value': pvalue,
+        })
+        outdir = f'{self.parameters.outdir}/numeric_features'
+        os.makedirs(outdir, exist_ok=True)
         Boxplot().main(
             data=self.df,
             x=self.outcome,
-            y=self.feature,
-            colors=self.BINARY_COLORS,
+            y=feature,
+            colors=BINARY_OUTCOME_COLORS,
             title=f'$p < 0.001$' if pvalue < 0.001 else f'$p = {pvalue:.3f}$',
-            png=f'{self.parameters.outdir}/{pvalue:.4f}_{self.feature}.png'
+            png=f'{outdir}/{feature}.png'
         )
+
+    def correct_p_values(self):
+        _, pvals_adjusted, _, _ = multipletests(
+            self.stats_df['P value'].values,
+            alpha=0.05,
+            method='fdr_bh',  # Benjamini-Hochberg
+            is_sorted=False,
+            returnsorted=False)
+        self.stats_df['P adjusted'] = pvals_adjusted
+
+
+class CreateCountDataFrame:
+
+    df: pd.DataFrame
+    x: str
+    y: str
+
+    outdf: pd.DataFrame
+
+    def main(
+            self,
+            df: pd.DataFrame,
+            x: str,
+            y: str) -> pd.DataFrame:
+
+        self.df = df.copy()
+        self.x = x
+        self.y = y
+
+        self.df[x] = self.df[x].astype(str)  # string is truly categorical
+        self.df[y] = self.df[y].astype(str)
+
+        self.set_empty_outdf()
+
+        for i, row in self.df.iterrows():
+            which_y = row[self.y]
+            which_x = row[self.x]
+            self.outdf.loc[which_y, which_x] += 1
+
+        return self.outdf
+
+    def set_empty_outdf(self):
+        columns = []
+        for item in self.df[self.x]:
+            if item not in columns:
+                columns.append(item)
+
+        indexes = []
+        for item in self.df[self.y]:
+            if item not in indexes:
+                indexes.append(item)
+
+        self.outdf = pd.DataFrame(
+            columns=sorted(columns),
+            index=sorted(indexes),
+            data=0)
+
+        self.outdf.columns.name = self.x
+        self.outdf.index.name = self.y
+
+
+class StackedBarPlot:
+
+    WIDTH = 5 / 2.54
+    HEIGHT = 5 / 2.54
+    FONT_SIZE = 6
+    LINEWIDTH = 0.5
+    BAR_WIDTH = 0.6
+    Y_LABEL = 'Count'
+
+    df: pd.DataFrame
+    title: str
+    png: str
+
+    def main(
+            self,
+            count_df: pd.DataFrame,
+            title: str,
+            png: str):
+
+        self.df = count_df
+        self.title = title
+        self.png = png
+
+        self.init()
+        self.plot()
+        self.config()
+        self.save()
+
+    def init(self):
+        matplotlib.rc('font', size=self.FONT_SIZE)
+        matplotlib.rc('font', family='DejaVu Sans')  # default font for English
+        for name in [self.df.columns.name, self.df.index.name]:
+            if contains_chinese(name):
+                matplotlib.rc('font', family='Microsoft JhengHei')  # 微軟正黑體
+                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
+                break
+
+        matplotlib.rc('axes', linewidth=self.LINEWIDTH)
+
+        outcome_name = self.df.index.name
+        char_width = 0.1219  # cm at font size 7
+        legend_width = len(outcome_name) * char_width / 2.54
+        figsize = (self.WIDTH + legend_width, self.HEIGHT)
+
+        plt.figure(figsize=figsize)
+
+    def plot(self):
+        bottom = np.zeros(shape=len(self.df.columns))
+        for i in range(len(self.df.index)):
+            plt.bar(
+                x=self.df.columns,
+                height=self.df.iloc[i, :],
+                bottom=bottom,
+                width=self.BAR_WIDTH,
+                color=BINARY_OUTCOME_COLORS[i],
+                edgecolor='black',
+                linewidth=self.LINEWIDTH
+            )
+            bottom += self.df.iloc[i, :]
+
+    def config(self):
+        plt.title(self.title, fontsize=self.FONT_SIZE)
+
+        plt.xlabel(self.df.columns.name, fontsize=self.FONT_SIZE)
+        plt.ylabel(self.Y_LABEL, fontsize=self.FONT_SIZE)
+
+        plt.xlim(left=-1, right=len(self.df.columns))
+
+        plt.xticks(rotation=90)
+        plt.gca().xaxis.set_tick_params(width=self.LINEWIDTH)
+        plt.gca().yaxis.set_tick_params(width=self.LINEWIDTH)
+
+        legend = plt.legend(self.df.index, title=self.df.index.name, bbox_to_anchor=(1.05, 1), loc='upper left')
+        legend.set_frame_on(False)
+
+    def save(self):
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
+        plt.savefig(self.png, dpi=600, bbox_inches='tight')
+        plt.close()
 
 
 class Boxplot:
@@ -115,7 +252,6 @@ class Boxplot:
     WIDTH_PADDING = 1.5 / 2.54
     WIDTH_PER_GROUP = 1.25 / 2.54
     HEIGHT = 5 / 2.54
-    DPI = 600
     FONT_SIZE = 6
     BOX_WIDTH = 0.5
     LINEWIDTH = 0.5
@@ -154,8 +290,15 @@ class Boxplot:
         self.save()
 
     def init(self):
-        plt.rcParams['font.size'] = self.FONT_SIZE
-        plt.rcParams['axes.linewidth'] = self.LINEWIDTH
+        matplotlib.rc('font', size=self.FONT_SIZE)
+        matplotlib.rc('font', family='DejaVu Sans')  # default font for English
+        for name in [self.x, self.y]:
+            if contains_chinese(name):
+                matplotlib.rc('font', family='Microsoft JhengHei')  # 微軟正黑體
+                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
+                break
+
+        matplotlib.rc('axes', linewidth=self.LINEWIDTH)
 
         groups = len(self.data[self.x].unique())
         figsize = (groups * self.WIDTH_PER_GROUP + self.WIDTH_PADDING, self.HEIGHT)
@@ -183,7 +326,7 @@ class Boxplot:
         )
 
     def config(self):
-        self.ax.set_title(self.title)
+        self.ax.set_title(self.title, fontsize=self.FONT_SIZE)
         self.ax.set(xlabel=self.x, ylabel=self.y)
         plt.gca().xaxis.set_tick_params(width=self.LINEWIDTH)
         plt.gca().yaxis.set_tick_params(width=self.LINEWIDTH)
@@ -192,5 +335,9 @@ class Boxplot:
 
     def save(self):
         plt.tight_layout()
-        plt.savefig(self.png, dpi=self.DPI)
+        plt.savefig(self.png, dpi=600)
         plt.close()
+
+
+def contains_chinese(s: str) -> bool:
+    return any('\u4e00' <= ch <= '\u9fff' for ch in s)

@@ -78,7 +78,7 @@ class PrepareData:
         numeric_columns = self.df.select_dtypes(include=[np.number]).columns  # only numeric columns
         for column in numeric_columns:
             if self.df[column].isna().sum() > 0:
-                self.df[column].fillna(self.df[column].mean(), inplace=True)
+                self.df[column] = self.df[column].fillna(self.df[column].mean())
 
 
 def is_binary(series: Iterable[Any]) -> bool:
