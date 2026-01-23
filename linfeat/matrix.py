@@ -8,7 +8,7 @@ from scipy.stats import pearsonr, spearmanr
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import linkage, leaves_list
 from statsmodels.stats.multitest import multipletests
-from .basic import Parameters
+from .basic import Parameters, config_matplotlib_font_for_language
 
 
 P_VALUE_CORRECTION = 'fdr_bh'  # Benjamini-Hochberg
@@ -92,12 +92,7 @@ class CorrelationMatrix:
 
     def plot_heatmap(self):
         matplotlib.rc('font', size=7)
-        for name in self.df.columns:
-            if contains_chinese(name):
-                matplotlib.rc('font', family='Microsoft JhengHei')
-                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
-                break
-        
+        config_matplotlib_font_for_language(self.df.columns)
         for with_color_bar in [True, False]:
             figsize = self.__get_figsize(with_color_bar=with_color_bar)
             plt.figure(figsize=figsize, dpi=600)
@@ -139,10 +134,6 @@ class CorrelationMatrix:
         height = matrix_size + feature_name_padding + marginal_padding
 
         return width / 2.54, height / 2.54
-
-
-def contains_chinese(s: str) -> bool:
-    return any('\u4e00' <= ch <= '\u9fff' for ch in s)
 
 
 class ReorderSamplesByHierarchicalClustering:

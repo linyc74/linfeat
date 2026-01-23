@@ -6,7 +6,7 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import Lasso, Ridge, LinearRegression
-from .basic import Parameters
+from .basic import Parameters, config_matplotlib_font_for_language
 
 
 import builtins
@@ -138,6 +138,8 @@ class LinearL1FeatureSelection:
         idx_keep = idx_sorted[:min(self.param.l1_show_top_m_features, coefs.shape[1])]
         coefs_keep = coefs[:, idx_keep]  # shape: (len(self.alpha_grid), self.l1_show_top_m_features)
         names_keep = [self.features[j] for j in idx_keep]
+
+        config_matplotlib_font_for_language(names_keep)
 
         # plot
         plt.figure(figsize=(self.param.fig_width, self.param.fig_height))
@@ -317,6 +319,8 @@ class LinearStepwiseFeatureSelection:
         train_mse_std = [result['train_mse_std'] for result in self.results]
         test_mse = [result['test_mse'] for result in self.results]
         test_mse_std = [result['test_mse_std'] for result in self.results]
+
+        config_matplotlib_font_for_language(self.selected_features)
 
         plt.figure(figsize=self.__figsize())
         plt.rcParams.update({'font.size': self.param.font_size})

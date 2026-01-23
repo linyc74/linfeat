@@ -8,7 +8,7 @@ from copy import deepcopy
 from typing import List, Tuple, Dict, Any
 from scipy.stats import mannwhitneyu, fisher_exact
 from statsmodels.stats.multitest import multipletests
-from .basic import Parameters, is_binary
+from .basic import Parameters, is_binary, config_matplotlib_font_for_language
 
 
 BINARY_OUTCOME_COLORS = [
@@ -196,12 +196,7 @@ class StackedBarPlot:
 
     def init(self):
         matplotlib.rc('font', size=self.FONT_SIZE)
-        matplotlib.rc('font', family='DejaVu Sans')  # default font for English
-        for name in [self.df.columns.name, self.df.index.name]:
-            if contains_chinese(name):
-                matplotlib.rc('font', family='Microsoft JhengHei')  # 微軟正黑體
-                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
-                break
+        config_matplotlib_font_for_language([self.df.columns.name, self.df.index.name])
 
         matplotlib.rc('axes', linewidth=self.LINEWIDTH)
 

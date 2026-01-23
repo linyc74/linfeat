@@ -1,3 +1,4 @@
+import matplotlib
 import numpy as np
 import pandas as pd
 from typing import List, Iterable, Any
@@ -111,3 +112,16 @@ def summarize_binary_outcome(df: pd.DataFrame, outcome: str):
     n_neg = df[outcome].value_counts()[0]
     print(f'Positive(1): {n_pos} ({n_pos / len(df) * 100:.2f}%)')
     print(f'Negative(0): {n_neg} ({n_neg / len(df) * 100:.2f}%)\n')
+
+
+def config_matplotlib_font_for_language(names: List[str]):
+    matplotlib.rc('font', family='DejaVu Sans')  # default font for English
+    for name in names:
+        if contains_chinese(name):
+            matplotlib.rc('font', family='Microsoft JhengHei')
+            matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
+            break
+
+
+def contains_chinese(s: str) -> bool:
+    return any('\u4e00' <= ch <= '\u9fff' for ch in s)

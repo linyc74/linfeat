@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.linear_model import LogisticRegression
-from .basic import Parameters
+from .basic import Parameters, config_matplotlib_font_for_language
 
 
 import builtins
@@ -167,6 +167,8 @@ class LogisticL1FeatureSelection:
         coefs_keep = coefs[:, idx_keep]  # shape: (len(self.C_grid), self.param.l1_show_top_m_features)
         names_keep = [self.features[j] for j in idx_keep]
         print(f'Plotting {self.param.l1_show_top_m_features} feature paths: {names_keep}\n')
+
+        config_matplotlib_font_for_language(names_keep)
 
         # plot
         plt.figure(figsize=(self.param.fig_width, self.param.fig_height))
@@ -368,6 +370,8 @@ class LogisticStepwiseFeatureSelection:
         train_loss_std = [result['train_loss_std'] for result in self.results]
         test_loss = [result['test_loss'] for result in self.results]
         test_loss_std = [result['test_loss_std'] for result in self.results]
+
+        config_matplotlib_font_for_language(self.selected_features)
 
         plt.figure(figsize=self.__figsize())
         plt.rcParams.update({'font.size': self.param.font_size})
