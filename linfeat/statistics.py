@@ -95,6 +95,7 @@ class Statistics:
             'Statistic': 'Mann-Whitney U test',
             'P value': pvalue,
         })
+
         outdir = f'{self.parameters.outdir}/numeric_features'
         os.makedirs(outdir, exist_ok=True)
         Boxplot().main(
@@ -171,7 +172,6 @@ class StackedBarPlot:
     WIDTH = 5 / 2.54
     HEIGHT = 5 / 2.54
     FONT_SIZE = 6
-    LINEWIDTH = 0.5
     BAR_WIDTH = 0.6
     Y_LABEL = 'Count'
 
@@ -198,7 +198,7 @@ class StackedBarPlot:
         matplotlib.rc('font', size=self.FONT_SIZE)
         config_matplotlib_font_for_language([self.df.columns.name, self.df.index.name])
 
-        matplotlib.rc('axes', linewidth=self.LINEWIDTH)
+        matplotlib.rc('axes', linewidth=0.5)
 
         outcome_name = self.df.index.name
         char_width = 0.1219  # cm at font size 7
@@ -217,7 +217,7 @@ class StackedBarPlot:
                 width=self.BAR_WIDTH,
                 color=BINARY_OUTCOME_COLORS[i],
                 edgecolor='black',
-                linewidth=self.LINEWIDTH
+                linewidth=0.5
             )
             bottom += self.df.iloc[i, :]
 
@@ -230,8 +230,8 @@ class StackedBarPlot:
         plt.xlim(left=-1, right=len(self.df.columns))
 
         plt.xticks(rotation=90)
-        plt.gca().xaxis.set_tick_params(width=self.LINEWIDTH)
-        plt.gca().yaxis.set_tick_params(width=self.LINEWIDTH)
+        plt.gca().xaxis.set_tick_params(width=0.5)
+        plt.gca().yaxis.set_tick_params(width=0.5)
 
         legend = plt.legend(self.df.index, title=self.df.index.name, bbox_to_anchor=(1.05, 1), loc='upper left')
         legend.set_frame_on(False)
@@ -249,10 +249,6 @@ class Boxplot:
     HEIGHT = 5 / 2.54
     FONT_SIZE = 6
     BOX_WIDTH = 0.5
-    LINEWIDTH = 0.5
-    BOX_lINEWIDTH = 0.5
-    MARKER_LINEWIDTH = 0.25
-    YLIM = None
 
     data: pd.DataFrame
     x: str
@@ -285,15 +281,10 @@ class Boxplot:
         self.save()
 
     def init(self):
-        matplotlib.rc('font', size=self.FONT_SIZE)
-        matplotlib.rc('font', family='DejaVu Sans')  # default font for English
-        for name in [self.x, self.y]:
-            if contains_chinese(name):
-                matplotlib.rc('font', family='Microsoft JhengHei')  # 微軟正黑體
-                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
-                break
+        config_matplotlib_font_for_language([self.x, self.y])
 
-        matplotlib.rc('axes', linewidth=self.LINEWIDTH)
+        matplotlib.rc('font', size=self.FONT_SIZE)
+        matplotlib.rc('axes', linewidth=0.5)
 
         groups = len(self.data[self.x].unique())
         figsize = (groups * self.WIDTH_PER_GROUP + self.WIDTH_PADDING, self.HEIGHT)
@@ -308,7 +299,7 @@ class Boxplot:
             hue=self.x,
             palette=self.colors,
             width=self.BOX_WIDTH,
-            linewidth=self.BOX_lINEWIDTH,
+            linewidth=0.5,
             dodge=False,  # to align the boxes on the x axis
         )
         self.ax = sns.stripplot(
@@ -317,15 +308,14 @@ class Boxplot:
             y=self.y,
             hue=self.x,
             palette=self.colors,
-            linewidth=self.MARKER_LINEWIDTH,
+            linewidth=0.25,
         )
 
     def config(self):
         self.ax.set_title(self.title, fontsize=self.FONT_SIZE)
         self.ax.set(xlabel=self.x, ylabel=self.y)
-        plt.gca().xaxis.set_tick_params(width=self.LINEWIDTH)
-        plt.gca().yaxis.set_tick_params(width=self.LINEWIDTH)
-        plt.ylim(self.YLIM)
+        plt.gca().xaxis.set_tick_params(width=0.5)
+        plt.gca().yaxis.set_tick_params(width=0.5)
         plt.legend().remove()
 
     def save(self):
