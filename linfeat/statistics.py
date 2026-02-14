@@ -57,12 +57,8 @@ class Statistics:
     def binary_feature(self, feature: str):
         self.df = self.df[self.df[feature].notna() & self.df[self.outcome].notna()]
 
-        count_df = CreateCountDataFrame().main(
-            df=self.df,
-            x=feature,
-            y=self.outcome
-        )
-        pvalue = fisher_exact(count_df).pvalue
+        contingency_df = create_contingency_table(df=self.df, x=feature, y=self.outcome)
+        pvalue = fisher_exact(contingency_df).pvalue
         self.stats_data.append({
             'Feature': feature,
             'Feature type': 'Binary',
@@ -72,7 +68,7 @@ class Statistics:
         outdir = f'{self.parameters.outdir}/binary_features'
         os.makedirs(outdir, exist_ok=True)
         StackedBarPlot().main(
-            count_df=count_df,
+            count_df=contingency_df,
             title=f'$p < 0.001$' if pvalue < 0.001 else f'$p = {pvalue:.3f}$',
             png=f'{outdir}/{feature}.png'
         )
@@ -117,54 +113,29 @@ class Statistics:
         self.stats_df['P adjusted'] = pvals_adjusted
 
 
-class CreateCountDataFrame:
-
-    df: pd.DataFrame
-    x: str
-    y: str
-
-    outdf: pd.DataFrame
-
-    def main(
-            self,
-            df: pd.DataFrame,
-            x: str,
-            y: str) -> pd.DataFrame:
-
-        self.df = df.copy()
-        self.x = x
-        self.y = y
-
-        self.df[x] = self.df[x].astype(str)  # string is truly categorical
-        self.df[y] = self.df[y].astype(str)
-
-        self.set_empty_outdf()
-
-        for i, row in self.df.iterrows():
-            which_y = row[self.y]
-            which_x = row[self.x]
-            self.outdf.loc[which_y, which_x] += 1
-
-        return self.outdf
-
-    def set_empty_outdf(self):
-        columns = []
-        for item in self.df[self.x]:
-            if item not in columns:
-                columns.append(item)
-
-        indexes = []
-        for item in self.df[self.y]:
-            if item not in indexes:
-                indexes.append(item)
-
-        self.outdf = pd.DataFrame(
-            columns=sorted(columns),
-            index=sorted(indexes),
-            data=0)
-
-        self.outdf.columns.name = self.x
-        self.outdf.index.name = self.y
+def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
+    if df[x].dtype == float:
+        df[x] = df[x].astype(int)
+    if df[y].dtype == float:
+        df[y] = df[y].astype(int)
+        
+    outdf = pd.DataFrame(
+        columns=[0, 1],
+        index=[0, 1],
+        data=0,
+        dtype=int,
+    )
+    outdf.columns.name = x
+    outdf.index.name = y
+    
+    for i, row in df.iterrows():
+        which_y = row[y]
+        which_x = row[x]
+        outdf.loc[which_y, which_x] += 1
+    
+    assert outdf.shape == (2, 2)  # contingency table must be 2x2
+    
+    return outdf
 
 
 class StackedBarPlot:

@@ -15,8 +15,10 @@ class TestCorrelationMatrix(TestCase):
     def test_pearson(self):
         parameters = Parameters()
         parameters.outdir = self.outdir
+        df = pd.read_csv(f'{self.indir}/data_ch.csv', index_col=0)
+        df['DM'] = 0  # should tolerate all-zero columns
         CorrelationMatrix().main(
-            df=pd.read_csv(f'{self.indir}/data_ch.csv', index_col=0),
+            df=df,
             parameters=parameters,
             method='pearson',
         )

@@ -56,9 +56,15 @@ class CorrelationMatrix:
                     corr_df.loc[col1, col2] = 1.0
                     p_value_df.loc[col1, col2] = 0.0
                 else:
-                    correlation, p_value = func(self.df[col1], self.df[col2])
-                    corr_df.loc[col1, col2] = correlation
-                    p_value_df.loc[col1, col2] = p_value
+                    col1_is_constant = self.df[col1].std() == 0
+                    col2_is_constant = self.df[col2].std() == 0
+                    if col1_is_constant or col2_is_constant:
+                        corr_df.loc[col1, col2] = 0.0
+                        p_value_df.loc[col1, col2] = 1.0
+                    else:
+                        correlation, p_value = func(self.df[col1], self.df[col2])
+                        corr_df.loc[col1, col2] = correlation
+                        p_value_df.loc[col1, col2] = p_value
 
         # casting to float prevents very weird memory segmentation fault in matplotlib and seaborn
         # which could be caused by inconsistent float types in the correlation matrix
