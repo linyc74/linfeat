@@ -114,24 +114,23 @@ class Statistics:
 
 
 def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
-    if df[x].dtype == float:
-        df[x] = df[x].astype(int)
-    if df[y].dtype == float:
-        df[y] = df[y].astype(int)
+    # cast to str to make it truly categorical, better display in the plot
+    # float 0.0 -> 0 -> '0'
+    # bool False -> 0 -> '0'
+    x_values = df[x].astype(int).astype(str)
+    y_values = df[y].astype(int).astype(str)
         
     outdf = pd.DataFrame(
-        columns=[0, 1],
-        index=[0, 1],
+        columns=['0', '1'],
+        index=['0', '1'],
         data=0,
         dtype=int,
     )
     outdf.columns.name = x
     outdf.index.name = y
     
-    for i, row in df.iterrows():
-        which_y = row[y]
-        which_x = row[x]
-        outdf.loc[which_y, which_x] += 1
+    for x_value, y_value in zip(x_values, y_values):
+        outdf.loc[y_value, x_value] += 1
     
     assert outdf.shape == (2, 2)  # contingency table must be 2x2
     
