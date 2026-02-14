@@ -43,10 +43,7 @@ class LinearL1FeatureSelection:
         self.plot_feature_paths_over_alpha()
         self.manually_set_best_alpha()
         self.select_features_at_best_alpha()
-        if len(self.selected_features) > 0:
-            self.refit_with_selected_features()
-        else:
-            print('No features were selected. Abort refitting.')
+        self.refit_with_selected_features()
 
     def print_summary(self):
         print(f'Samples: {len(self.df)}')
@@ -195,10 +192,12 @@ class LinearL1FeatureSelection:
         print(f'Selected features at best alpha = {self.best_alpha:.5g}: {self.selected_features}\n')
 
     def refit_with_selected_features(self):
-        # use the selected features
-        # no scaling, because it's for interpreting the features
+        if len(self.selected_features) == 0:
+            print('No features were selected. Abort refitting.\n')
+            return
+
         idx = [self.features.index(feature) for feature in self.selected_features]
-        X = self.X[:, idx]
+        X = self.X[:, idx]  # no scaling, because it's for interpreting the features
 
         lr = LinearRegression()  # no regularization, because it's not for prediction, just for interpretability
         lr.fit(X, self.y)

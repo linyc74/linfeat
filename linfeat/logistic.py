@@ -222,10 +222,12 @@ class LogisticL1FeatureSelection:
         print(f'{len(self.selected_features)} features selected at best C = {self.best_C:.5g}: {self.selected_features}\n')
 
     def refit_with_selected_features(self):
-        # use the selected features
-        # no scaling, because it's for interpreting the features
+        if len(self.selected_features) == 0:
+            print('No features were selected. Abort refitting.\n')
+            return
+
         idx = [self.features.index(feature) for feature in self.selected_features]
-        X = self.X[:, idx]
+        X = self.X[:, idx]  # no scaling, because it's for interpreting the features
 
         clf = LogisticRegression(
             penalty=None,  # no regularization, because it's not for prediction, just for interpretability
