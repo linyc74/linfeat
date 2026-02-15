@@ -58,12 +58,14 @@ class Statistics:
         self.df = self.df[self.df[feature].notna() & self.df[self.outcome].notna()]
 
         contingency_df = create_contingency_table(df=self.df, x=feature, y=self.outcome)
+        odds_ratio = calculate_odds_ratio(contingency_df)
         pvalue = fisher_exact(contingency_df).pvalue
         self.stats_data.append({
             'Feature': feature,
             'Feature type': 'Binary',
             'Statistic': 'Fisher\'s Exact Test',
             'P value': pvalue,
+            'Odds ratio': odds_ratio,
         })
         outdir = f'{self.parameters.outdir}/binary_features'
         os.makedirs(outdir, exist_ok=True)
@@ -85,11 +87,16 @@ class Statistics:
             x=self.df.loc[negative, feature],
             y=self.df.loc[positive, feature]
         )
+        mean_0 = self.df.loc[negative, feature].mean()
+        mean_1 = self.df.loc[positive, feature].mean()
         self.stats_data.append({
             'Feature': feature,
             'Feature type': 'Numeric',
             'Statistic': 'Mann-Whitney U test',
             'P value': pvalue,
+            'Mean (0)': mean_0,
+            'Mean (1)': mean_1,
+            'Mean difference (1 - 0)': mean_1 - mean_0,
         })
 
         outdir = f'{self.parameters.outdir}/numeric_features'
@@ -111,6 +118,12 @@ class Statistics:
             is_sorted=False,
             returnsorted=False)
         self.stats_df['P adjusted'] = pvals_adjusted
+
+        columns = self.stats_df.columns.tolist()
+        p_pos = columns.index('P value')
+        columns.insert(p_pos + 1, 'P adjusted')  # 'P value' and then 'P adjusted'
+        columns = columns[:-1]  # remove the very last 'P adjusted' column
+        self.stats_df = self.stats_df.reindex(columns=columns)
 
 
 def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
@@ -135,6 +148,24 @@ def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
     assert outdf.shape == (2, 2)  # contingency table must be 2x2
     
     return outdf
+
+
+def calculate_odds_ratio(contingency_df: pd.DataFrame) -> float:
+    """
+      1 0
+    1 a b
+    0 c d
+
+    OR = (a/c) / (b/d) = (ad) / (bc)
+    """
+    df = contingency_df.copy()
+    a = df.loc['1', '1']
+    b = df.loc['1', '0']
+    c = df.loc['0', '1']
+    d = df.loc['0', '0']
+    if b == 0 or c == 0:
+        return np.nan
+    return (a * d) / (b * c)
 
 
 class StackedBarPlot:
