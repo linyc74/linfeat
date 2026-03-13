@@ -45,10 +45,15 @@ class Statistics:
         assert is_binary(self.df[self.outcome]), 'Outcome must be binary'
 
         self.stats_data = []
+
+        # compute all binary features first, this will put odds ratio columns left in the stats_df
         for feature in self.features:
             if is_binary(self.df[feature]):
                 self.binary_feature(feature)
-            else:
+        
+        # then numeric features
+        for feature in self.features:
+            if not is_binary(self.df[feature]):
                 self.numeric_feature(feature)
 
         self.stats_df = pd.DataFrame(self.stats_data)
