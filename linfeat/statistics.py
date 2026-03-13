@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 from typing import List, Tuple, Dict, Any
 from scipy.stats import mannwhitneyu, fisher_exact
+from scipy.stats.contingency import odds_ratio as scipy_odds_ratio
 from statsmodels.stats.multitest import multipletests
 from .basic import Parameters, is_binary, config_matplotlib_font_for_language
 
@@ -58,7 +59,7 @@ class Statistics:
         self.df = self.df[self.df[feature].notna() & self.df[self.outcome].notna()]
 
         contingency_df = create_contingency_table(df=self.df, x=feature, y=self.outcome)
-        odds_ratio = calculate_odds_ratio(contingency_df)
+        odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
         pvalue = fisher_exact(contingency_df).pvalue
         self.stats_data.append({
             'Feature': feature,
@@ -66,6 +67,8 @@ class Statistics:
             'Statistic': 'Fisher\'s Exact Test',
             'P value': pvalue,
             'Odds ratio': odds_ratio,
+            'Odds ratio 95% CI low': ci_low,
+            'Odds ratio 95% CI high': ci_high,
         })
         outdir = f'{self.parameters.outdir}/binary_features'
         os.makedirs(outdir, exist_ok=True)
@@ -150,22 +153,26 @@ def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
     return outdf
 
 
-def calculate_odds_ratio(contingency_df: pd.DataFrame) -> float:
+def calculate_odds_ratio(contingency_df: pd.DataFrame) -> Tuple[float, float, float]:
     """
       1 0
     1 a b
     0 c d
 
     OR = (a/c) / (b/d) = (ad) / (bc)
+
+    Returns (odds_ratio, ci_low, ci_high) at the 95% confidence level.
+    Returns (nan, nan, nan) when the OR is undefined (zero cell in b or c).
     """
     df = contingency_df.copy()
-    a = df.loc['1', '1']
     b = df.loc['1', '0']
     c = df.loc['0', '1']
-    d = df.loc['0', '0']
     if b == 0 or c == 0:
-        return np.nan
-    return (a * d) / (b * c)
+        return np.nan, np.nan, np.nan
+    table = df.values.astype(int)
+    result = scipy_odds_ratio(table, kind='sample')
+    ci = result.confidence_interval(confidence_level=0.95)
+    return result.statistic, ci.low, ci.high
 
 
 class StackedBarPlot:
