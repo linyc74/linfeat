@@ -1,5 +1,5 @@
 from .basic import Parameters
-from .workflows import linfeat, linear_feature_selection, logistic_feature_selection
+from .workflows import linfeat
 
 
 __version__ = '1.2.0-beta'
