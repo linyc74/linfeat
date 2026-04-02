@@ -13,6 +13,19 @@ from functools import partial
 print = partial(builtins.print, flush=True)  # always flush the output
 
 
+def univariable_statistics(df: pd.DataFrame, features: List[str], outcome: str, outdir: str):
+
+    parameters = Parameters()
+    parameters.outdir = outdir
+
+    if is_binary(df[outcome]):
+        Statistics().main(
+            df=df,
+            features=features,
+            outcome=outcome,
+            parameters=parameters)
+
+
 def linfeat(
         df: pd.DataFrame,
         features: List[str],
@@ -25,58 +38,42 @@ def linfeat(
 
     os.makedirs(parameters.outdir, exist_ok=True)
 
-    if is_binary(df[outcome]):
-        Statistics().main(  # run statistical tests before filling any missing values
-            df=df,
-            features=features,
-            outcome=outcome,
-            parameters=parameters
-        )
-
     df = PrepareData().main(df=df, features=features, outcome=outcome)
     df.to_csv(f'{parameters.outdir}/missing_values_filled_data.csv', encoding='utf-8-sig', index=False)
 
     for method in ['pearson', 'spearman']:
-        CorrelationMatrix().main(
-            df=df,
-            parameters=parameters,
-            method=method)
+        CorrelationMatrix().main(df=df, parameters=parameters, method=method)
 
     core_features = [] if stepwise_core_features is None else stepwise_core_features
 
     if is_binary(df[outcome]):
-        summarize_binary_outcome(
-            df=df,
-            outcome=outcome
-        )
+        summarize_binary_outcome(df=df, outcome=outcome)
+
         LogisticL1FeatureSelection().main(
             df=df,
             features=features,
             outcome=outcome,
-            parameters=parameters
-        )
+            parameters=parameters)
+
         LogisticStepwiseFeatureSelection().main(
             df=df,
             core_features=core_features,
             candidate_features=[c for c in df.columns if c not in [outcome] + core_features],
             outcome=outcome,
-            parameters=parameters
-        )
+            parameters=parameters)
+
     else:
-        summarize_numeric_outcome(
-            df=df,
-            outcome=outcome
-        )
+        summarize_numeric_outcome(df=df, outcome=outcome)
+
         LinearL1FeatureSelection().main(
             df=df,
             features=features,
             outcome=outcome,
-            parameters=parameters
-        )
+            parameters=parameters)
+
         LinearStepwiseFeatureSelection().main(
             df=df,
             core_features=core_features,
             candidate_features=[c for c in df.columns if c not in [outcome] + core_features],
             outcome=outcome,
-            parameters=parameters
-        )
+            parameters=parameters)
