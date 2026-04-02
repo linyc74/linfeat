@@ -18,7 +18,7 @@ BINARY_OUTCOME_COLORS = [
 ]
 
 
-class Statistics:
+class UnivariableStatistics:
 
     df: pd.DataFrame
     features: List[str]

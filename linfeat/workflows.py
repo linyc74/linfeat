@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from typing import List, Optional
-from .statistics import Statistics
+from .statistics import UnivariableStatistics
 from .matrix import CorrelationMatrix
 from .linear import LinearL1FeatureSelection, LinearStepwiseFeatureSelection
 from .logistic import LogisticL1FeatureSelection, LogisticStepwiseFeatureSelection
@@ -19,7 +19,7 @@ def univariable_statistics(df: pd.DataFrame, features: List[str], outcome: str, 
     parameters.outdir = outdir
 
     if determine_variable_type(df[outcome]) == BINARY:
-        Statistics().main(
+        UnivariableStatistics().main(
             df=df,
             features=features,
             outcome=outcome,

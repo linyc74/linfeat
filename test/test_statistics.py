@@ -1,7 +1,7 @@
 import pandas as pd
 from test.setup import TestCase
 from linfeat.basic import Parameters
-from linfeat.statistics import Statistics
+from linfeat.statistics import UnivariableStatistics
 
 
 class TestStatistics(TestCase):
@@ -15,7 +15,7 @@ class TestStatistics(TestCase):
     def test_main(self):
         parameters = Parameters()
         parameters.outdir = self.outdir
-        Statistics().main(
+        UnivariableStatistics().main(
             df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
             features=[
                 'Binary Factor 1',
