@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from test.setup import TestCase
-from linfeat.basic import PrepareData, is_binary, determine_variable_type
+from linfeat.basic import PrepareData, determine_variable_type
 
 
 class TestPrepareData(TestCase):
@@ -24,19 +24,13 @@ class TestPrepareData(TestCase):
 
 class TestFunctions(TestCase):
 
-    def test_is_binary(self):
-        self.assertTrue(is_binary([0, 1]))
-        self.assertTrue(is_binary([0, 1, np.nan]))
-        self.assertFalse(is_binary(['0', '1']))
-        self.assertFalse(is_binary([0, 1, 2]))
-
     def test_determine_variable_type(self):
         for series, expected in [
-            ([0, 1, np.nan], 'binary'),
-            (['0', '1', np.nan], 'nominal_categorical'),
-            ([0, 1, 1.1, np.nan], 'continuous'),
-            ([0.0, 1.0, np.nan], 'binary'),
+            ([0, 1, np.nan],        'binary'),
+            ([0.0, 1.0, np.nan],    'binary'),
             ([True, False, np.nan], 'binary'),
+            (['0', '1', np.nan],    'categorical'),
+            ([0, 1, 1.1, np.nan],   'continuous'),
         ]:
             self.assertEqual(determine_variable_type(series), expected)
 

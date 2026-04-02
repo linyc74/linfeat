@@ -9,7 +9,7 @@ from typing import List, Tuple, Dict, Any
 from scipy.stats import mannwhitneyu, fisher_exact
 from scipy.stats.contingency import odds_ratio as scipy_odds_ratio
 from statsmodels.stats.multitest import multipletests
-from .basic import Parameters, is_binary, config_matplotlib_font_for_language
+from .basic import Parameters, config_matplotlib_font_for_language, BINARY, CONTINUOUS, determine_variable_type
 
 
 BINARY_OUTCOME_COLORS = [
@@ -42,18 +42,18 @@ class Statistics:
 
         os.makedirs(self.parameters.outdir, exist_ok=True)
 
-        assert is_binary(self.df[self.outcome]), 'Outcome must be binary'
+        assert determine_variable_type(self.df[self.outcome]) == BINARY, 'Outcome must be binary'
 
         self.stats_data = []
 
         # compute all binary features first, this will put odds ratio columns left in the stats_df
         for feature in self.features:
-            if is_binary(self.df[feature]):
+            if determine_variable_type(self.df[feature]) == BINARY:
                 self.binary_feature(feature)
         
         # then numeric features
         for feature in self.features:
-            if not is_binary(self.df[feature]):
+            if determine_variable_type(self.df[feature]) == CONTINUOUS:
                 self.numeric_feature(feature)
 
         self.stats_df = pd.DataFrame(self.stats_data)

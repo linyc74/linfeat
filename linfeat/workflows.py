@@ -5,7 +5,7 @@ from .statistics import Statistics
 from .matrix import CorrelationMatrix
 from .linear import LinearL1FeatureSelection, LinearStepwiseFeatureSelection
 from .logistic import LogisticL1FeatureSelection, LogisticStepwiseFeatureSelection
-from .basic import Parameters, PrepareData, is_binary, summarize_numeric_outcome, summarize_binary_outcome
+from .basic import Parameters, PrepareData, summarize_numeric_outcome, summarize_binary_outcome, determine_variable_type, BINARY, CONTINUOUS, CATEGORICAL
 
 
 import builtins
@@ -18,7 +18,7 @@ def univariable_statistics(df: pd.DataFrame, features: List[str], outcome: str, 
     parameters = Parameters()
     parameters.outdir = outdir
 
-    if is_binary(df[outcome]):
+    if determine_variable_type(df[outcome]) == BINARY:
         Statistics().main(
             df=df,
             features=features,
@@ -46,7 +46,7 @@ def linfeat(
 
     core_features = [] if stepwise_core_features is None else stepwise_core_features
 
-    if is_binary(df[outcome]):
+    if determine_variable_type(df[outcome]) == BINARY:
         summarize_binary_outcome(df=df, outcome=outcome)
 
         LogisticL1FeatureSelection().main(
@@ -62,7 +62,7 @@ def linfeat(
             outcome=outcome,
             parameters=parameters)
 
-    else:
+    elif determine_variable_type(df[outcome]) == CONTINUOUS:
         summarize_numeric_outcome(df=df, outcome=outcome)
 
         LinearL1FeatureSelection().main(
@@ -77,3 +77,6 @@ def linfeat(
             candidate_features=[c for c in df.columns if c not in [outcome] + core_features],
             outcome=outcome,
             parameters=parameters)
+
+    elif determine_variable_type(df[outcome]) == CATEGORICAL:
+        raise ValueError(f'Categorical outcome "{outcome}" is not supported yet for linear feature selection.')

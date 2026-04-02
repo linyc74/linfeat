@@ -82,23 +82,6 @@ class PrepareData:
                 self.df[column] = self.df[column].fillna(self.df[column].mean())
 
 
-def is_binary(series: Iterable[Any]) -> bool:
-    """
-    A binary series should only contain 0 and 1. Anything else encountered will be considered as not binary.
-    """
-    for v in series:
-        if pd.isna(v):
-            continue  # ignore missing values
-        if type(v) is str:
-            return False
-        elif type(v) is int or type(v) is float:
-            if v != 0 and v != 1:
-                return False
-        else:
-            return False
-    return True
-
-
 def summarize_numeric_outcome(df: pd.DataFrame, outcome: str):
     print(f'Outcome: "{outcome}"')  
     stats_str = df[outcome].describe().to_string()
@@ -128,8 +111,7 @@ def contains_chinese(s: str) -> bool:
 
 
 BINARY = 'binary'
-NOMINAL_CATEGORICAL = 'nominal_categorical'
-ORDINAL_CATEGORICAL = 'ordinal_categorical'
+CATEGORICAL = 'categorical'
 CONTINUOUS = 'continuous'
 
 
@@ -141,7 +123,7 @@ def determine_variable_type(series: Iterable[Any]) -> str:
 
     for v in __series:
         if type(v) is str:
-            return NOMINAL_CATEGORICAL
+            return CATEGORICAL
         elif type(v) is int:
             if v != 0 and v != 1:
                 return CONTINUOUS
