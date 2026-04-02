@@ -125,3 +125,32 @@ def config_matplotlib_font_for_language(names: List[str]):
 
 def contains_chinese(s: str) -> bool:
     return any('\u4e00' <= ch <= '\u9fff' for ch in s)
+
+
+BINARY = 'binary'
+NOMINAL_CATEGORICAL = 'nominal_categorical'
+ORDINAL_CATEGORICAL = 'ordinal_categorical'
+CONTINUOUS = 'continuous'
+
+
+def determine_variable_type(series: Iterable[Any]) -> str:
+    __series = [v for v in series if not pd.isna(v)]
+
+    if len(__series) == 0:
+        raise ValueError(f'"{series}" has no valid values to determine variable type')
+
+    for v in __series:
+        if type(v) is str:
+            return NOMINAL_CATEGORICAL
+        elif type(v) is int:
+            if v != 0 and v != 1:
+                return CONTINUOUS
+        elif type(v) is float:
+            if v != 0.0 and v != 1.0:
+                return CONTINUOUS
+        elif type(v) is bool:
+            continue
+        else:
+            raise ValueError(f'Unknown variable type: {type(v)}')
+
+    return BINARY
