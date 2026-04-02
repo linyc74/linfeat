@@ -4,7 +4,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-from copy import deepcopy
 from typing import List, Tuple, Dict, Any
 from scipy.stats import mannwhitneyu, fisher_exact
 from scipy.stats.contingency import odds_ratio as scipy_odds_ratio
@@ -23,7 +22,7 @@ class UnivariableStatistics:
     df: pd.DataFrame
     features: List[str]
     outcome: str
-    parameters: Parameters
+    outdir: str
 
     stats_data: List[Dict[str, Any]]
     stats_df: pd.DataFrame
@@ -33,14 +32,14 @@ class UnivariableStatistics:
             df: pd.DataFrame,
             features: List[str],
             outcome: str,
-            parameters: Parameters):
+            outdir: str):
         
         self.df = df
         self.features = features
         self.outcome = outcome
-        self.parameters = deepcopy(parameters)
+        self.outdir = outdir
 
-        os.makedirs(self.parameters.outdir, exist_ok=True)
+        os.makedirs(self.outdir, exist_ok=True)
 
         assert determine_variable_type(self.df[self.outcome]) == BINARY, 'Outcome must be binary'
 
@@ -58,7 +57,7 @@ class UnivariableStatistics:
 
         self.stats_df = pd.DataFrame(self.stats_data)
         self.correct_p_values()
-        self.stats_df.to_csv(f'{self.parameters.outdir}/statistics.csv', encoding='utf-8-sig', index=False)
+        self.stats_df.to_csv(f'{self.outdir}/statistics.csv', encoding='utf-8-sig', index=False)
         
     def binary_feature(self, feature: str):
         self.df = self.df[self.df[feature].notna() & self.df[self.outcome].notna()]
@@ -75,7 +74,7 @@ class UnivariableStatistics:
             'Odds ratio 95% CI low': ci_low,
             'Odds ratio 95% CI high': ci_high,
         })
-        outdir = f'{self.parameters.outdir}/binary_features'
+        outdir = f'{self.outdir}/binary_features'
         os.makedirs(outdir, exist_ok=True)
         StackedBarPlot().main(
             count_df=contingency_df,
@@ -107,7 +106,7 @@ class UnivariableStatistics:
             'Mean difference (1 - 0)': mean_1 - mean_0,
         })
 
-        outdir = f'{self.parameters.outdir}/numeric_features'
+        outdir = f'{self.outdir}/numeric_features'
         os.makedirs(outdir, exist_ok=True)
         Boxplot().main(
             data=self.df,

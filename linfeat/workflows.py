@@ -13,20 +13,11 @@ from functools import partial
 print = partial(builtins.print, flush=True)  # always flush the output
 
 
-def univariable_statistics(df: pd.DataFrame, features: List[str], outcome: str, outdir: str):
-
-    parameters = Parameters()
-    parameters.outdir = outdir
-
-    if determine_variable_type(df[outcome]) == BINARY:
-        UnivariableStatistics().main(
-            df=df,
-            features=features,
-            outcome=outcome,
-            parameters=parameters)
+def statistics_workflow(df: pd.DataFrame, features: List[str], outcome: str, outdir: str):
+    UnivariableStatistics().main(df=df, features=features, outcome=outcome, outdir=outdir)
 
 
-def linfeat(
+def feature_selection_workflow(
         df: pd.DataFrame,
         features: List[str],
         outcome: str,
@@ -80,3 +71,6 @@ def linfeat(
 
     elif determine_variable_type(df[outcome]) == CATEGORICAL:
         raise ValueError(f'Categorical outcome "{outcome}" is not supported yet for linear feature selection.')
+
+
+linfeat = feature_selection_workflow

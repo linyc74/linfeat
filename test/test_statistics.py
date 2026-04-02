@@ -1,6 +1,5 @@
 import pandas as pd
 from test.setup import TestCase
-from linfeat.basic import Parameters
 from linfeat.statistics import UnivariableStatistics
 
 
@@ -13,8 +12,6 @@ class TestStatistics(TestCase):
         self.tear_down()
     
     def test_main(self):
-        parameters = Parameters()
-        parameters.outdir = self.outdir
         UnivariableStatistics().main(
             df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
             features=[
@@ -34,5 +31,5 @@ class TestStatistics(TestCase):
                 'Bacteroides',
             ],
             outcome='Obesity(1)/Normal(0)',
-            parameters=parameters,
+            outdir=self.outdir,
         )

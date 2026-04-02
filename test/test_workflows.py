@@ -1,10 +1,10 @@
 import pandas as pd
 from test.setup import TestCase
 from linfeat.basic import Parameters
-from linfeat.workflows import linfeat
+from linfeat.workflows import feature_selection_workflow
 
 
-class TestWorkflows(TestCase):
+class TestFeatureSelectionWorkflow(TestCase):
 
     def setUp(self):
         self.set_up(py_path=__file__)
@@ -12,10 +12,10 @@ class TestWorkflows(TestCase):
     def tearDown(self):
         self.tear_down()
     
-    def test_linfeat_numeric_outcome(self):
+    def test_numeric_outcome(self):
         parameters = Parameters()
         parameters.outdir = self.outdir
-        linfeat(
+        feature_selection_workflow(
             df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
             features=[
                 'Muribaculum_intestinale',
@@ -33,10 +33,10 @@ class TestWorkflows(TestCase):
             parameters=parameters,
         )
 
-    def test_linfeat_binary_outcome(self):
+    def test_binary_outcome(self):
         parameters = Parameters()
         parameters.outdir = self.outdir
-        linfeat(
+        feature_selection_workflow(
             df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
             features=[
                 'Parabacteroides_goldsteinii',
