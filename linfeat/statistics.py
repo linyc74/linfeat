@@ -1,37 +1,17 @@
 import os
+import shutil
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-from typing import List, Tuple, Dict, Any, Optional
+from matplotlib.colors import to_rgba
+from typing import List, Tuple, Dict, Any, Optional, Union
 from scipy.stats.contingency import odds_ratio as scipy_odds_ratio
 from scipy.stats import fisher_exact, chi2_contingency, ttest_ind, mannwhitneyu, f_oneway, kruskal, pearsonr, spearmanr
 from statsmodels.stats.multitest import multipletests
 from .basic import determine_variable_type as type_of
 from .basic import BINARY, CONTINUOUS, CATEGORICAL, config_matplotlib_font_for_language
-
-
-BINARY_OUTCOME_COLORS = [
-    (0.8, 0.8, 0.8, 1.0),  # negative (0) light gray
-    (0.4, 0.4, 0.4, 1.0),  # positive (1) dark gray
-]
-CATEGORICAL_OUTCOME_COLORS = [
-    (0.6, 0.8, 0.9, 1.0),  # positive (0) blue
-    (0.9, 0.6, 0.7, 1.0),  # positive (1) pink
-    (0.7, 0.9, 0.6, 1.0),  # positive (2) green
-    (0.6, 0.7, 0.9, 1.0),  # positive (3) light blue
-    (0.9, 0.7, 0.6, 1.0),  # positive (4) orange
-    (0.7, 0.6, 0.9, 1.0),  # positive (5) purple
-    (0.6, 0.9, 0.7, 1.0),  # positive (6) light green
-    (0.9, 0.7, 0.6, 1.0),  # positive (7) orange
-    (0.7, 0.6, 0.9, 1.0),  # positive (8) purple
-    (0.6, 0.9, 0.7, 1.0),  # positive (9) light green
-    (0.9, 0.7, 0.6, 1.0),  # positive (10) orange
-    (0.7, 0.6, 0.9, 1.0),  # positive (11) purple
-    (0.6, 0.9, 0.7, 1.0),  # positive (12) light green
-    (0.9, 0.7, 0.6, 1.0),  # positive (13) orange
-]
 
 
 class UnivariableStatistics:
@@ -42,6 +22,7 @@ class UnivariableStatistics:
     outdir: str
     parametric_outcome: bool
     parametric_features: List[str]
+    colors: List[Tuple[float, float, float, float]]
 
     stats_data: List[Dict[str, Any]]
     stats_df: pd.DataFrame
@@ -53,7 +34,8 @@ class UnivariableStatistics:
             outcome: str,
             outdir: str,
             parametric_outcome: bool,
-            parametric_features: List[str]):
+            parametric_features: List[str],
+            colors: str | List[str|Tuple[float, float, float, float]]):
 
         self.df = df
         self.variables = variables
@@ -61,7 +43,8 @@ class UnivariableStatistics:
         self.outdir = outdir
         self.parametric_outcome = parametric_outcome
         self.parametric_features = parametric_features
-
+        self.colors = get_colors(colors=colors)
+        
         os.makedirs(self.outdir, exist_ok=True)
 
         self.reorder_variables()
@@ -162,6 +145,7 @@ class UnivariableStatistics:
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
         StackedBarPlot().main(
             count_df=contingency_df,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -185,6 +169,7 @@ class UnivariableStatistics:
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
         StackedBarPlot().main(
             count_df=contingency_df,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -219,7 +204,7 @@ class UnivariableStatistics:
             data=df,
             x=x,
             y=y,
-            colors=BINARY_OUTCOME_COLORS,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -254,7 +239,7 @@ class UnivariableStatistics:
             data=df,
             x=x,
             y=y,
-            colors=BINARY_OUTCOME_COLORS,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -287,7 +272,7 @@ class UnivariableStatistics:
             data=self.df,
             x=x,
             y=y,
-            colors=CATEGORICAL_OUTCOME_COLORS,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -320,7 +305,7 @@ class UnivariableStatistics:
             data=df,
             x=x,
             y=y,
-            colors=CATEGORICAL_OUTCOME_COLORS,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -344,6 +329,7 @@ class UnivariableStatistics:
             data=df,
             x=x,
             y=y,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -367,6 +353,7 @@ class UnivariableStatistics:
             data=df,
             x=x,
             y=y,
+            colors=self.colors,
             title=format_(pvalue),
             png=f'{outdir}/{png}'
         )
@@ -459,16 +446,19 @@ class StackedBarPlot:
     Y_LABEL = 'Count'
 
     df: pd.DataFrame
+    colors: List[Tuple[float, float, float, float]]
     title: str
     png: str
 
     def main(
             self,
             count_df: pd.DataFrame,
+            colors: List[Tuple[float, float, float, float]],
             title: str,
             png: str):
 
         self.df = count_df
+        self.colors = colors
         self.title = title
         self.png = png
 
@@ -498,7 +488,7 @@ class StackedBarPlot:
                 height=self.df.iloc[i, :],
                 bottom=bottom,
                 width=self.BAR_WIDTH,
-                color=BINARY_OUTCOME_COLORS[i],
+                color=self.colors[i],
                 edgecolor='black',
                 linewidth=0.5
             )
@@ -618,6 +608,7 @@ class ScatterPlot:
     data: pd.DataFrame
     x: str
     y: str
+    colors: List[Tuple[float, float, float, float]]
     title: str
     png: str
 
@@ -628,11 +619,14 @@ class ScatterPlot:
             data: pd.DataFrame,
             x: str,
             y: str,
+            colors: List[Tuple[float, float, float, float]],
             title: str,
             png: str):
+
         self.data = data
         self.x = x
         self.y = y
+        self.colors = colors
         self.title = title
         self.png = png
 
@@ -654,7 +648,7 @@ class ScatterPlot:
             data=self.data,
             x=self.x,
             y=self.y,
-            color=(0.4, 0.4, 0.4),
+            color=self.colors[0],
             edgecolor='black',
             linewidth=0.5,
             s=self.POINT_SIZE,
@@ -676,3 +670,16 @@ class ScatterPlot:
 
 def contains_chinese(s: str) -> bool:
     return any('\u4e00' <= ch <= '\u9fff' for ch in s)
+
+
+def get_colors(colors: str | List[str|Tuple[float, float, float, float]]) -> List[Tuple[float, float, float, float]]:
+
+    if isinstance(colors, str):  # is a colormap name
+        cmap = plt.colormaps[colors]
+        return [cmap(i) for i in range(len(colors))]
+
+    elif isinstance(colors, list):  # is a list of color names, hex codes, or RGBA tuples
+        return [to_rgba(c) for c in colors]
+    
+    else:
+        raise ValueError(f'Invalid colors: "{colors}"')

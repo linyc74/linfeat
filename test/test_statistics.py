@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from test.setup import TestCase
-from linfeat.statistics import UnivariableStatistics, create_contingency_table
+from linfeat.statistics import UnivariableStatistics, create_contingency_table, get_colors
 
 
 class TestUnivariableStatistics(TestCase):
@@ -39,6 +39,7 @@ class TestUnivariableStatistics(TestCase):
                 'Lactobacillus_johnsonii',
                 'Bacteroides',
             ],
+            colors=['lightgray', 'darkgray'],
         )
 
     def test_two_category_outcome(self):
@@ -68,6 +69,7 @@ class TestUnivariableStatistics(TestCase):
                 'Lactobacillus_johnsonii',
                 'Bacteroides',
             ],
+            colors=['lightblue', 'tomato'],
         )
 
     def test_more_than_two_category_outcome(self):
@@ -79,6 +81,7 @@ class TestUnivariableStatistics(TestCase):
                 outdir=self.outdir,
                 parametric_outcome=False,
                 parametric_features=[],  # no parametric features
+                colors='Set1',
             )
         self.assertEqual(str(context.exception), 'Categorical outcome "Five Categories" with more than 2 categories is not supported yet for univariable statistics.')
 
@@ -110,6 +113,7 @@ class TestUnivariableStatistics(TestCase):
                 'Erysipelotrichaceae',
                 'Lactobacillus_johnsonii',
             ],
+            colors='Set2',
         )
 
     def test_nonparametric_continuous_outcome(self):
@@ -140,6 +144,7 @@ class TestUnivariableStatistics(TestCase):
                 'Erysipelotrichaceae',
                 'Lactobacillus_johnsonii',
             ],
+            colors='Set2',
         )
 
 
@@ -214,3 +219,35 @@ class TestCreateContingencyTable(TestCase):
             ],
         )
         self.assertDataFrameEqual(actual, expected)
+
+
+class TestGetColors(TestCase):
+    
+    def test_colormap_name(self):
+        actual = get_colors(colors='Set1')
+        for item in actual:
+            self.assertTrue(type(item) is tuple)
+            self.assertEqual(len(item), 4)
+    
+    def test_list_of_color_names(self):
+        actual = get_colors(colors=['red', 'green', 'blue'])
+        expected = [
+            (1.0, 0.0, 0.0, 1.0),
+            (0.0, 0.5019607843137255, 0.0, 1.0),
+            (0.0, 0.0, 1.0, 1.0),
+        ]
+        self.assertListEqual(actual, expected)
+
+    def test_list_of_color_hex_codes(self):
+        actual = get_colors(colors=['#FF0000', '#00FF00', '#0000FF'])
+        expected = [
+            (1.0, 0.0, 0.0, 1.0),
+            (0.0, 1.0, 0.0, 1.0),
+            (0.0, 0.0, 1.0, 1.0),
+        ]
+        self.assertListEqual(actual, expected)
+
+    def test_list_of_color_rgba_tuples(self):
+        colors=[(1.0, 0.0, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0)]
+        actual = get_colors(colors=colors)
+        self.assertListEqual(actual, colors)  # not changed at all
