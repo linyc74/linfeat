@@ -75,7 +75,7 @@ class LogisticL1FeatureSelection:
                 X_test_scaled = scaler.transform(X_test)  # use training set's scaler for test set
 
                 clf = LogisticRegression(
-                    penalty='l1',
+                    l1_ratio=1,  # this is L1 Lasso regularization
                     solver='saga',
                     C=float(C),
                     class_weight=self.param.class_weight,
@@ -142,7 +142,7 @@ class LogisticL1FeatureSelection:
         Xs = scaler.fit_transform(self.X)  # scale the whole dataset without train-test split
 
         clf = LogisticRegression(
-            penalty='l1',
+            l1_ratio=1,  # this is L1 Lasso regularization
             solver='saga',
             fit_intercept=True,
             class_weight=self.param.class_weight,
@@ -202,7 +202,7 @@ class LogisticL1FeatureSelection:
         Xs = scaler.fit_transform(self.X)  # scale the whole dataset without train-test split
 
         clf = LogisticRegression(
-            penalty='l1',
+            l1_ratio=1,  # this is L1 Lasso regularization
             solver='saga',
             fit_intercept=True,
             class_weight=self.param.class_weight,
@@ -230,7 +230,7 @@ class LogisticL1FeatureSelection:
         X = self.X[:, idx]  # no scaling, because it's for interpreting the features
 
         clf = LogisticRegression(
-            penalty=None,  # no regularization, because it's not for prediction, just for interpretability
+            C=np.inf,  # no regularization, because it's not for prediction, just for interpretability
             solver='lbfgs',
             fit_intercept=True,
             class_weight=self.param.class_weight,
@@ -332,7 +332,7 @@ class LogisticStepwiseFeatureSelection:
             X_test_scaled = scaler.transform(X_test)  # use training set's scaler for test set
 
             clf = LogisticRegression(
-                penalty='l2',
+                l1_ratio=0,  # this is L2 ridge regularization
                 C=C,
                 solver='saga',
                 fit_intercept=True,
