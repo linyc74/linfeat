@@ -34,6 +34,7 @@ class TestUnivariableStatistics(TestCase):
             ],
             outcome='Obesity(1)/Normal(0)',
             outdir=self.outdir,
+            parametric_outcome=False,
             parametric_features=[
                 'Lactobacillus_johnsonii',
                 'Bacteroides',
@@ -62,6 +63,7 @@ class TestUnivariableStatistics(TestCase):
             ],
             outcome='Two Categories',
             outdir=self.outdir,
+            parametric_outcome=False,
             parametric_features=[
                 'Lactobacillus_johnsonii',
                 'Bacteroides',
@@ -74,7 +76,10 @@ class TestUnivariableStatistics(TestCase):
                 df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
                 variables=['Blautia 菌屬'],
                 outcome='Five Categories',
-                outdir=self.outdir)
+                outdir=self.outdir,
+                parametric_outcome=False,
+                parametric_features=[],  # no parametric features
+            )
         self.assertEqual(str(context.exception), 'Categorical outcome "Five Categories" with more than 2 categories is not supported yet for univariable statistics.')
 
     def test_parametric_continuous_outcome(self):

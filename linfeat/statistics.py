@@ -52,15 +52,15 @@ class UnivariableStatistics:
             variables: List[str],
             outcome: str,
             outdir: str,
-            parametric_outcome: bool = False,
-            parametric_features: Optional[List[str]] = None):
+            parametric_outcome: bool,
+            parametric_features: List[str]):
 
         self.df = df
         self.variables = variables
         self.outcome = outcome
         self.outdir = outdir
         self.parametric_outcome = parametric_outcome
-        self.parametric_features = [] if parametric_features is None else parametric_features
+        self.parametric_features = parametric_features
 
         os.makedirs(self.outdir, exist_ok=True)
 
@@ -82,7 +82,7 @@ class UnivariableStatistics:
 
         self.stats_df = pd.DataFrame(self.stats_data)
         self.correct_p_values()
-        self.stats_df.to_csv(f'{self.outdir}/statistics.csv', encoding='utf-8-sig', index=False)
+        self.stats_df.to_csv(f'{self.outdir}/univariable_statistics.csv', encoding='utf-8-sig', index=False)
 
     def reorder_variables(self):
         # process all binary variables first, then categorical variables, then continuous variables

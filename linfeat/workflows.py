@@ -13,8 +13,22 @@ from functools import partial
 print = partial(builtins.print, flush=True)  # always flush the output
 
 
-def statistics_workflow(df: pd.DataFrame, features: List[str], outcome: str, outdir: str):
-    UnivariableStatistics().main(df=df, features=features, outcome=outcome, outdir=outdir)
+def statistics_workflow(
+        df: pd.DataFrame,
+        variables: List[str],
+        outcome: str,
+        outdir: str = './statistics',
+        parametric_outcome: bool = False,
+        parametric_features: Optional[List[str]] = None):
+
+    UnivariableStatistics().main(
+        df=df,
+        variables=variables,
+        outcome=outcome,
+        outdir=outdir,
+        parametric_outcome=parametric_outcome,
+        parametric_features=parametric_features if parametric_features is not None else []
+    )
 
 
 def feature_selection_workflow(
