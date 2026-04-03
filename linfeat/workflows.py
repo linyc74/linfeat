@@ -19,7 +19,8 @@ def statistics_workflow(
         outcome: str,
         outdir: str = './statistics',
         parametric_outcome: bool = False,
-        parametric_features: Optional[List[str]] = None):
+        parametric_features: Optional[List[str]] = None,
+        colors: str | List[str|Tuple[float, float, float, float]] = 'Set1'):
 
     UnivariableStatistics().main(
         df=df,
@@ -27,8 +28,8 @@ def statistics_workflow(
         outcome=outcome,
         outdir=outdir,
         parametric_outcome=parametric_outcome,
-        parametric_features=parametric_features if parametric_features is not None else []
-    )
+        parametric_features=parametric_features if parametric_features is not None else [],
+        colors=colors)
 
 
 def feature_selection_workflow(

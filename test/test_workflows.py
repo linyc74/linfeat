@@ -36,6 +36,7 @@ class TestStatisticsWorkflow(TestCase):
                 'Thomasclavelia',
                 'Lachnospiraceae',
             ],
+            colors='Set2',
         )
     
     def test_binary_outcome(self):
@@ -62,6 +63,7 @@ class TestStatisticsWorkflow(TestCase):
                 'Thomasclavelia',
                 'Lachnospiraceae',
             ],
+            colors=['lightblue', 'tomato'],
         )
     
 
