@@ -82,21 +82,21 @@ class UnivariableStatistics:
         self.variables = sorted(self.variables, key=to_key)
 
     def binary_outcome(self):
-        for feature in self.variables:
-            if type_of(self.df[feature]) == BINARY:
-                self.fisher_exact_test(x=feature, y=self.outcome)
+        for variable in self.variables:
+            if type_of(self.df[variable]) == BINARY:
+                self.fisher_exact_test(x=variable, y=self.outcome)
             
-            elif type_of(self.df[feature]) == CATEGORICAL:
-                if len(self.df[feature].dropna().unique()) == 2:
-                    self.fisher_exact_test(x=feature, y=self.outcome)
+            elif type_of(self.df[variable]) == CATEGORICAL:
+                if len(self.df[variable].dropna().unique()) == 2:
+                    self.fisher_exact_test(x=variable, y=self.outcome)
                 else:  # ≥ 3 categories
-                    self.chi_square_test(x=feature, y=self.outcome)
+                    self.chi_square_test(x=variable, y=self.outcome)
             
-            elif type_of(self.df[feature]) == CONTINUOUS:
-                if feature in self.parametric_features:
-                    self.t_test(x=self.outcome, y=feature)
+            elif type_of(self.df[variable]) == CONTINUOUS:
+                if variable in self.parametric_features:
+                    self.t_test(x=self.outcome, y=variable)
                 else:
-                    self.mann_whitney_u_test(x=self.outcome, y=feature)
+                    self.mann_whitney_u_test(x=self.outcome, y=variable)
 
     def continuous_outcome(self):
         for feature in self.variables:
@@ -134,15 +134,21 @@ class UnivariableStatistics:
         odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
         pvalue = fisher_exact(contingency_df).pvalue
 
-        self.stats_data.append({
-            'Statistical test': 'Fisher\'s exact test',
+        row = {
+            'Statistical Test': 'Fisher\'s exact test',
             'x': x,
             'y': y,
             'p-value': pvalue,
-            'Odds ratio (OR)': odds_ratio,
-            'OR 95% CI low': ci_low,
-            'OR 95% CI high': ci_high,
-        })
+            'Odds Ratio (OR)': odds_ratio,
+            'OR 95% CI Lower': ci_low,
+            'OR 95% CI Upper': ci_high,
+        }
+
+        for group, series in contingency_df.iterrows():  # each row of the contingency table is a group
+            line = ' | '.join([f'{k}: {v}' for k, v in series.items()])
+            row[f'Counts ({group})'] = line
+
+        self.stats_data.append(row)
 
         outdir = f'{self.outdir}/Fisher\'s exact test'
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
@@ -160,13 +166,19 @@ class UnivariableStatistics:
 
         chi2, pvalue, dof, expected = chi2_contingency(contingency_df)
         
-        self.stats_data.append({
-            'Statistical test': 'Chi-square test',
+        row = {
+            'Statistical Test': 'Chi-square test',
             'x': x,
             'y': y,
             'p-value': pvalue,
-            'Degrees of freedom': dof,
-        })
+            'Degrees of Freedom': dof,
+        }
+
+        for group, series in contingency_df.iterrows():
+            line = ' | '.join([f'{k}: {v}' for k, v in series.items()])
+            row[f'Counts ({group})'] = line
+
+        self.stats_data.append(row)
 
         outdir = f'{self.outdir}/Chi-square test'
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
@@ -193,12 +205,14 @@ class UnivariableStatistics:
         statistic, pvalue = ttest_ind(vector_0, vector_1)
 
         self.stats_data.append({
-            'Statistical test': 'Student\'s t-test',
+            'Statistical Test': 'Student\'s t-test',
             'x': x,
             'y': y,
             'p-value': pvalue,
             f'Mean ({df[x].unique()[0]})': vector_0.mean(),
+            f'Std. Dev. ({df[x].unique()[0]})': vector_0.std(),
             f'Mean ({df[x].unique()[1]})': vector_1.mean(),
+            f'Std. Dev. ({df[x].unique()[1]})': vector_1.std(),
         })
 
         outdir = f'{self.outdir}/Student\'s t-test'
@@ -228,12 +242,14 @@ class UnivariableStatistics:
         statistic, pvalue = mannwhitneyu(vector_0, vector_1)
 
         self.stats_data.append({
-            'Statistical test': 'Mann-Whitney U test',
+            'Statistical Test': 'Mann-Whitney U test',
             'x': x,
             'y': y,
             'p-value': pvalue,
             f'Mean ({df[x].unique()[0]})': vector_0.mean(),
+            f'Std. Dev. ({df[x].unique()[0]})': vector_0.std(),
             f'Mean ({df[x].unique()[1]})': vector_1.mean(),
+            f'Std. Dev. ({df[x].unique()[1]})': vector_1.std(),
         })
 
         outdir = f'{self.outdir}/Mann-Whitney U test'
@@ -252,20 +268,22 @@ class UnivariableStatistics:
 
         df.sort_values(by=x, inplace=True, ascending=True)
 
-        group_names = self.df[x].unique()
-        group_values = [self.df[y][self.df[x] == name] for name in group_names]
-        group_means = [group.mean() for group in group_values]
+        group_names = self.df[x].unique()  # list of strings
+        group_values = [self.df[y][self.df[x] == name] for name in group_names]  # list of vectors
+        group_means = [group.mean() for group in group_values]  # list of scalars
+        group_std_devs = [group.std() for group in group_values]  # list of scalars
 
         statistic, pvalue = f_oneway(*group_values)
 
         row = {
-            'Statistical test': 'ANOVA',
+            'Statistical Test': 'ANOVA',
             'x': x,
             'y': y,
             'p-value': pvalue,
         }
-        for name, mean in zip(group_names, group_means):
+        for name, mean, std_dev in zip(group_names, group_means, group_std_devs):
             row[f'Mean ({name})'] = mean
+            row[f'Std. Dev. ({name})'] = std_dev
 
         self.stats_data.append(row)
         
@@ -285,20 +303,22 @@ class UnivariableStatistics:
 
         df.sort_values(by=x, inplace=True, ascending=True)
 
-        group_names = self.df[x].unique()
-        group_values = [self.df[y][self.df[x] == name] for name in group_names]
-        group_means = [group.mean() for group in group_values]
+        group_names = self.df[x].unique()  # list of strings
+        group_values = [self.df[y][self.df[x] == name] for name in group_names]  # list of vectors
+        group_means = [group.mean() for group in group_values]  # list of scalars
+        group_std_devs = [group.std() for group in group_values]  # list of scalars
 
         statistic, pvalue = kruskal(*group_values)
 
         row = {
-            'Statistical test': 'Kruskal-Wallis Test',
+            'Statistical Test': 'Kruskal-Wallis Test',
             'x': x,
             'y': y,
             'p-value': pvalue,
         }
-        for name, mean in zip(group_names, group_means):
+        for name, mean, std_dev in zip(group_names, group_means, group_std_devs):
             row[f'Mean ({name})'] = mean
+            row[f'Std. Dev. ({name})'] = std_dev
 
         self.stats_data.append(row)
 
@@ -320,7 +340,7 @@ class UnivariableStatistics:
         pvalue = result.pvalue
 
         self.stats_data.append({
-            'Statistical test': 'Pearson Correlation Test',
+            'Statistical Test': 'Pearson Correlation Test',
             'x': x,
             'y': y,
             'p-value': pvalue,   
@@ -344,7 +364,7 @@ class UnivariableStatistics:
         pvalue = result.pvalue
 
         self.stats_data.append({
-            'Statistical test': 'Spearman Correlation Test',
+            'Statistical Test': 'Spearman Correlation Test',
             'x': x,
             'y': y,
             'p-value': pvalue,
