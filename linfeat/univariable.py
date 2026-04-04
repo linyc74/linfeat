@@ -24,7 +24,7 @@ class UnivariableStatistics:
     outcome: str
     outdir: str
     parametric_outcome: bool
-    parametric_features: List[str]
+    parametric_variables: List[str]
     colors: List[Tuple[float, float, float, float]]
 
     stats_data: List[Dict[str, Any]]
@@ -37,7 +37,7 @@ class UnivariableStatistics:
             outcome: str,
             outdir: str,
             parametric_outcome: bool,
-            parametric_features: List[str],
+            parametric_variables: List[str],
             colors: str | List[str|Tuple[float, float, float, float]]):
 
         self.df = df.copy()
@@ -45,7 +45,7 @@ class UnivariableStatistics:
         self.outcome = outcome
         self.outdir = outdir
         self.parametric_outcome = parametric_outcome
-        self.parametric_features = parametric_features
+        self.parametric_variables = parametric_variables
         self.colors = get_colors(colors=colors)
         
         os.makedirs(self.outdir, exist_ok=True)
@@ -93,36 +93,25 @@ class UnivariableStatistics:
                     self.chi_square_test(x=variable, y=self.outcome)
             
             elif type_of(self.df[variable]) == CONTINUOUS:
-                if variable in self.parametric_features:
-                    self.t_test(x=self.outcome, y=variable)
+                if variable in self.parametric_variables:
+                    self.t_test_or_mann_whitney_u_test(x=self.outcome, y=variable, parametric=True)
                 else:
-                    self.mann_whitney_u_test(x=self.outcome, y=variable)
+                    self.t_test_or_mann_whitney_u_test(x=self.outcome, y=variable, parametric=False)
 
     def continuous_outcome(self):
-        for feature in self.variables:
-            if type_of(self.df[feature]) == BINARY:
-                if self.parametric_outcome:
-                    self.t_test(x=feature, y=self.outcome)
-                else:
-                    self.mann_whitney_u_test(x=feature, y=self.outcome)
+        for variable in self.variables:
+            if type_of(self.df[variable]) == BINARY:
+                self.t_test_or_mann_whitney_u_test(x=variable, y=self.outcome, parametric=self.parametric_outcome)
             
-            elif type_of(self.df[feature]) == CATEGORICAL:
-                if len(self.df[feature].dropna().unique()) == 2:
-                    if self.parametric_outcome:
-                        self.t_test(x=feature, y=self.outcome)
-                    else:
-                        self.mann_whitney_u_test(x=feature, y=self.outcome)
+            elif type_of(self.df[variable]) == CATEGORICAL:
+                if len(self.df[variable].dropna().unique()) == 2:
+                    self.t_test_or_mann_whitney_u_test(x=variable, y=self.outcome, parametric=self.parametric_outcome)
                 else:  # ≥ 3 categories
-                    if self.parametric_outcome:
-                        self.anova(x=feature, y=self.outcome)
-                    else:
-                        self.kruskal_wallis_test(x=feature, y=self.outcome)
-            
-            elif type_of(self.df[feature]) == CONTINUOUS:
-                if feature in self.parametric_features and self.parametric_outcome:  # both x and y needs to be parametric
-                    self.pearson_correlation_test(x=feature, y=self.outcome)
-                else:
-                    self.spearman_correlation_test(x=feature, y=self.outcome)
+                    self.anova_or_kruskal_wallis_test(x=variable, y=self.outcome, parametric=self.parametric_outcome)
+
+            elif type_of(self.df[variable]) == CONTINUOUS:
+                both_x_and_y_are_parametric = (variable in self.parametric_variables) and self.parametric_outcome
+                self.pearson_or_spearman_correlation_test(x=variable, y=self.outcome, parametric=both_x_and_y_are_parametric)
 
     def fisher_exact_test(self, x: str, y: str):
         df = self.df.copy()[[x, y]].dropna(how='any')
@@ -131,8 +120,8 @@ class UnivariableStatistics:
 
         assert contingency_df.shape == (2, 2), f'Contingency table must be 2x2, but got {contingency_df.shape}'
 
-        odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
         pvalue = fisher_exact(contingency_df).pvalue
+        odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
 
         row = {
             'Statistical Test': 'Fisher\'s exact test',
@@ -174,7 +163,7 @@ class UnivariableStatistics:
             'Degrees of Freedom': dof,
         }
 
-        for group, series in contingency_df.iterrows():
+        for group, series in contingency_df.iterrows():  # each row of the contingency table is a group
             line = ' | '.join([f'{k}: {v}' for k, v in series.items()])
             row[f'Counts ({group})'] = line
 
@@ -189,116 +178,46 @@ class UnivariableStatistics:
             png=f'{outdir}/{png}'
         )
 
-    def t_test(self, x: str, y: str):
+    def t_test_or_mann_whitney_u_test(self, x: str, y: str, parametric: bool):
         df = self.df.copy()[[x, y]].dropna(how='any')
 
         assert len(df[x].unique()) == 2, f'"{x}" is not binary or two-category'
-
-        df.sort_values(by=x, inplace=True, ascending=True)
-
-        group_0 = df[x] == df[x].unique()[0]
-        group_1 = df[x] == df[x].unique()[1]
-
-        vector_0 = df.loc[group_0, y]
-        vector_1 = df.loc[group_1, y]
-
-        statistic, pvalue = ttest_ind(vector_0, vector_1)
-
-        self.stats_data.append({
-            'Statistical Test': 'Student\'s t-test',
-            'x': x,
-            'y': y,
-            'p-value': pvalue,
-            f'Mean ({df[x].unique()[0]})': vector_0.mean(),
-            f'Std. Dev. ({df[x].unique()[0]})': vector_0.std(),
-            f'Mean ({df[x].unique()[1]})': vector_1.mean(),
-            f'Std. Dev. ({df[x].unique()[1]})': vector_1.std(),
-        })
-
-        outdir = f'{self.outdir}/Student\'s t-test'
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
-        Boxplot().main(
-            data=df,
-            x=x,
-            y=y,
-            colors=self.colors,
-            title=format_(pvalue),
-            png=f'{outdir}/{png}'
-        )
-
-    def mann_whitney_u_test(self, x: str, y: str):
-        df = self.df.copy()[[x, y]].dropna(how='any')
-
-        assert len(df[x].unique()) == 2, f'"{x}" is not binary or two-category'
-
-        df.sort_values(by=x, inplace=True, ascending=True)
-
-        group_0 = df[x] == df[x].unique()[0]
-        group_1 = df[x] == df[x].unique()[1]
-
-        vector_0 = df.loc[group_0, y]
-        vector_1 = df.loc[group_1, y]
-
-        statistic, pvalue = mannwhitneyu(vector_0, vector_1)
-
-        self.stats_data.append({
-            'Statistical Test': 'Mann-Whitney U test',
-            'x': x,
-            'y': y,
-            'p-value': pvalue,
-            f'Mean ({df[x].unique()[0]})': vector_0.mean(),
-            f'Std. Dev. ({df[x].unique()[0]})': vector_0.std(),
-            f'Mean ({df[x].unique()[1]})': vector_1.mean(),
-            f'Std. Dev. ({df[x].unique()[1]})': vector_1.std(),
-        })
-
-        outdir = f'{self.outdir}/Mann-Whitney U test'
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
-        Boxplot().main(
-            data=df,
-            x=x,
-            y=y,
-            colors=self.colors,
-            title=format_(pvalue),
-            png=f'{outdir}/{png}'
-        )
-
-    def anova(self, x: str, y: str):
-        df = self.df.copy()[[x, y]].dropna(how='any')
-
-        df.sort_values(by=x, inplace=True, ascending=True)
-
-        group_names = self.df[x].unique()  # list of strings
-        group_values = [self.df[y][self.df[x] == name] for name in group_names]  # list of vectors
-        group_means = [group.mean() for group in group_values]  # list of scalars
-        group_std_devs = [group.std() for group in group_values]  # list of scalars
-
-        statistic, pvalue = f_oneway(*group_values)
-
-        row = {
-            'Statistical Test': 'ANOVA',
-            'x': x,
-            'y': y,
-            'p-value': pvalue,
-        }
-        for name, mean, std_dev in zip(group_names, group_means, group_std_devs):
-            row[f'Mean ({name})'] = mean
-            row[f'Std. Dev. ({name})'] = std_dev
-
-        self.stats_data.append(row)
         
-        outdir = f'{self.outdir}/ANOVA'
+        df.sort_values(by=x, inplace=True, ascending=True)
+        
+        group_0 = df[x] == df[x].unique()[0]
+        group_1 = df[x] == df[x].unique()[1]
+        
+        vector_0 = df.loc[group_0, y]
+        vector_1 = df.loc[group_1, y]
+        
+        test = ttest_ind if parametric else mannwhitneyu
+        statistic, pvalue = test(vector_0, vector_1)
+
+        test_name = 'Student\'s t-test' if parametric else 'Mann-Whitney U test'
+        row = {
+            'Statistical Test': test_name,
+            'x': x,
+            'y': y,
+            'p-value': pvalue,
+            f'Mean ({df[x].unique()[0]})': vector_0.mean(),
+            f'Std. Dev. ({df[x].unique()[0]})': vector_0.std(),
+            f'Mean ({df[x].unique()[1]})': vector_1.mean(),
+            f'Std. Dev. ({df[x].unique()[1]})': vector_1.std(),
+        }
+        self.stats_data.append(row)
+
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
         Boxplot().main(
-            data=self.df,
+            data=df,
             x=x,
             y=y,
             colors=self.colors,
             title=format_(pvalue),
-            png=f'{outdir}/{png}'
+            png=f'{self.outdir}/{test_name}/{png}'
         )
 
-    def kruskal_wallis_test(self, x: str, y: str):
+    def anova_or_kruskal_wallis_test(self, x: str, y: str, parametric: bool):
         df = self.df.copy()[[x, y]].dropna(how='any')
 
         df.sort_values(by=x, inplace=True, ascending=True)
@@ -308,10 +227,12 @@ class UnivariableStatistics:
         group_means = [group.mean() for group in group_values]  # list of scalars
         group_std_devs = [group.std() for group in group_values]  # list of scalars
 
-        statistic, pvalue = kruskal(*group_values)
+        test = f_oneway if parametric else kruskal
+        statistic, pvalue = test(*group_values)
 
+        test_name = 'ANOVA' if parametric else 'Kruskal-Wallis test'
         row = {
-            'Statistical Test': 'Kruskal-Wallis Test',
+            'Statistical Test': test_name,
             'x': x,
             'y': y,
             'p-value': pvalue,
@@ -322,7 +243,6 @@ class UnivariableStatistics:
 
         self.stats_data.append(row)
 
-        outdir = f'{self.outdir}/Kruskal-Wallis Test'
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
         Boxplot().main(
             data=df,
@@ -330,23 +250,25 @@ class UnivariableStatistics:
             y=y,
             colors=self.colors,
             title=format_(pvalue),
-            png=f'{outdir}/{png}'
+            png=f'{self.outdir}/{test_name}/{png}'
         )
 
-    def pearson_correlation_test(self, x: str, y: str):
+    def pearson_or_spearman_correlation_test(self, x: str, y: str, parametric: bool):
         df = self.df.copy()[[x, y]].dropna(how='any')
 
-        result = pearsonr(df[x], df[y])
+        correlation = pearsonr if parametric else spearmanr
+
+        result = correlation(df[x], df[y])
         pvalue = result.pvalue
 
+        test_name = 'Pearson correlation test' if parametric else 'Spearman correlation test'
         self.stats_data.append({
-            'Statistical Test': 'Pearson Correlation Test',
+            'Statistical Test': test_name,
             'x': x,
             'y': y,
             'p-value': pvalue,   
         })
 
-        outdir = f'{self.outdir}/Pearson Correlation Test'
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
         ScatterPlot().main(
             data=df,
@@ -354,31 +276,7 @@ class UnivariableStatistics:
             y=y,
             colors=self.colors,
             title=format_(pvalue),
-            png=f'{outdir}/{png}'
-        )
-
-    def spearman_correlation_test(self, x: str, y: str):
-        df = self.df.copy()[[x, y]].dropna(how='any')
-
-        result = spearmanr(df[x], df[y])
-        pvalue = result.pvalue
-
-        self.stats_data.append({
-            'Statistical Test': 'Spearman Correlation Test',
-            'x': x,
-            'y': y,
-            'p-value': pvalue,
-        })
-
-        outdir = f'{self.outdir}/Spearman Correlation Test'
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
-        ScatterPlot().main(
-            data=df,
-            x=x,
-            y=y,
-            colors=self.colors,
-            title=format_(pvalue),
-            png=f'{outdir}/{png}'
+            png=f'{self.outdir}/{test_name}/{png}'
         )
 
     def correct_p_values(self):

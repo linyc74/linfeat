@@ -35,7 +35,7 @@ class TestUnivariableStatistics(TestCase):
             outcome='Obesity(1)/Normal(0)',
             outdir=self.outdir,
             parametric_outcome=False,
-            parametric_features=[
+            parametric_variables=[
                 'Lactobacillus_johnsonii',
                 'Bacteroides',
             ],
@@ -65,7 +65,7 @@ class TestUnivariableStatistics(TestCase):
             outcome='Two Categories',
             outdir=self.outdir,
             parametric_outcome=False,
-            parametric_features=[
+            parametric_variables=[
                 'Lactobacillus_johnsonii',
                 'Bacteroides',
             ],
@@ -80,7 +80,7 @@ class TestUnivariableStatistics(TestCase):
                 outcome='Five Categories',
                 outdir=self.outdir,
                 parametric_outcome=False,
-                parametric_features=[],  # no parametric features
+                parametric_variables=[],  # no parametric features
                 colors='Set1',
             )
         self.assertEqual(str(context.exception), 'Categorical outcome "Five Categories" with more than 2 categories is not supported yet for univariable statistics.')
@@ -108,7 +108,7 @@ class TestUnivariableStatistics(TestCase):
             outcome='Bacteroides',
             outdir=self.outdir,
             parametric_outcome=True,
-            parametric_features=[
+            parametric_variables=[
                 'Faecalibaculum_rodentium',
                 'Erysipelotrichaceae',
                 'Lactobacillus_johnsonii',
@@ -139,7 +139,7 @@ class TestUnivariableStatistics(TestCase):
             outcome='Bacteroides',
             outdir=self.outdir,
             parametric_outcome=False,
-            parametric_features=[
+            parametric_variables=[
                 'Faecalibaculum_rodentium',
                 'Erysipelotrichaceae',
                 'Lactobacillus_johnsonii',

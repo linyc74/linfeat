@@ -30,7 +30,7 @@ class TestStatisticsWorkflow(TestCase):
             outcome='Parabacteroides_goldsteinii',
             outdir=self.outdir,
             parametric_outcome=True,
-            parametric_features=[
+            parametric_variables=[
                 'Muribaculum_intestinale',
                 'Ligilactobacillus',
                 'Thomasclavelia',
@@ -57,7 +57,7 @@ class TestStatisticsWorkflow(TestCase):
             outcome='Obesity(1)/Normal(0)',
             outdir=self.outdir,
             parametric_outcome=False,
-            parametric_features=[
+            parametric_variables=[
                 'Muribaculum_intestinale',
                 'Ligilactobacillus',
                 'Thomasclavelia',
