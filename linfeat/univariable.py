@@ -13,6 +13,9 @@ from scipy.stats import fisher_exact, chi2_contingency, ttest_ind, mannwhitneyu,
 from .basic import determine_variable_type as type_of
 from .basic import BINARY, CONTINUOUS, CATEGORICAL, config_matplotlib_font_for_language
 
+import warnings
+warnings.filterwarnings('ignore')
+
 
 class UnivariableStatistics:
 
