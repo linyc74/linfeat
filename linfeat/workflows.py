@@ -8,7 +8,6 @@ from .linear import LinearL1FeatureSelection, LinearStepwiseFeatureSelection
 from .logistic import LogisticL1FeatureSelection, LogisticStepwiseFeatureSelection
 from .basic import Parameters, PrepareData, summarize_numeric_outcome, summarize_binary_outcome, determine_variable_type, BINARY, CONTINUOUS, CATEGORICAL
 
-
 import builtins
 from functools import partial
 print = partial(builtins.print, flush=True)  # always flush the output
@@ -18,7 +17,7 @@ def statistics_workflow(
         df: pd.DataFrame,
         variables: List[str],
         outcome: str,
-        outdir: str = './univariable',
+        outdir: str = './statistics',
         parametric_outcome: bool = False,
         parametric_features: Optional[List[str]] = None,
         colors: str | List[str|Tuple[float, float, float, float]] = 'Set1'):
