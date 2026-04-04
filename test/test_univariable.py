@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from test.setup import TestCase
-from linfeat.statistics import UnivariableStatistics, create_contingency_table, get_colors
+from linfeat.univariable import UnivariableStatistics, create_contingency_table, get_colors
 
 
 class TestUnivariableStatistics(TestCase):

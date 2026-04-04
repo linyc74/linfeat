@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from typing import List, Optional
 from .matrix import CorrelationMatrix
-from .statistics import UnivariableStatistics
+from .univariable import UnivariableStatistics
 from .multivariable import MultivariableRegression
 from .linear import LinearL1FeatureSelection, LinearStepwiseFeatureSelection
 from .logistic import LogisticL1FeatureSelection, LogisticStepwiseFeatureSelection
@@ -18,7 +18,7 @@ def statistics_workflow(
         df: pd.DataFrame,
         variables: List[str],
         outcome: str,
-        outdir: str = './statistics',
+        outdir: str = './univariable',
         parametric_outcome: bool = False,
         parametric_features: Optional[List[str]] = None,
         colors: str | List[str|Tuple[float, float, float, float]] = 'Set1'):
