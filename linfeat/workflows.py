@@ -1,8 +1,9 @@
 import os
 import pandas as pd
 from typing import List, Optional
-from .statistics import UnivariableStatistics
 from .matrix import CorrelationMatrix
+from .statistics import UnivariableStatistics
+from .multivariable import MultivariableRegression
 from .linear import LinearL1FeatureSelection, LinearStepwiseFeatureSelection
 from .logistic import LogisticL1FeatureSelection, LogisticStepwiseFeatureSelection
 from .basic import Parameters, PrepareData, summarize_numeric_outcome, summarize_binary_outcome, determine_variable_type, BINARY, CONTINUOUS, CATEGORICAL
@@ -30,6 +31,12 @@ def statistics_workflow(
         parametric_outcome=parametric_outcome,
         parametric_features=parametric_features if parametric_features is not None else [],
         colors=colors)
+    
+    MultivariableRegression().main(
+        df=df,
+        variables=variables,
+        outcome=outcome,
+        outdir=outdir)
 
 
 def feature_selection_workflow(
