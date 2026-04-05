@@ -87,7 +87,7 @@ class UnivariableStatistics:
                 self.fisher_exact_test(x=variable, y=self.outcome)
             
             elif type_of(self.df[variable]) == CATEGORICAL:
-                if len(self.df[variable].dropna().unique()) == 2:
+                if len(self.df[variable].dropna().unique()) <= 2:
                     self.fisher_exact_test(x=variable, y=self.outcome)
                 else:  # ≥ 3 categories
                     self.chi_square_test(x=variable, y=self.outcome)
@@ -118,10 +118,12 @@ class UnivariableStatistics:
 
         contingency_df = create_contingency_table(df=df, x=x, y=y)
 
-        assert contingency_df.shape == (2, 2), f'Contingency table must be 2x2, but got {contingency_df.shape}'
-
-        pvalue = fisher_exact(contingency_df).pvalue
-        odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
+        if contingency_df.shape == (2, 2):
+            pvalue = fisher_exact(contingency_df).pvalue
+            odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
+        else:
+            print(f'Warning: x="{x}", y="{y}", contingency table must be 2x2, but got {contingency_df.shape}. Skip Fisher\'s exact test.')
+            pvalue, odds_ratio, ci_low, ci_high = np.nan, np.nan, np.nan, np.nan
 
         row = {
             'Statistical Test': 'Fisher\'s exact test',

@@ -72,6 +72,23 @@ class TestUnivariableStatistics(TestCase):
             colors=['lightblue', 'tomato'],
         )
 
+    def test_skip_only_one_category_outcome(self):
+        df=pd.read_csv(f'{self.indir}/data.csv', index_col=0)
+        df['Binary Factor 1'] = 0
+        df['Two Categories'] = 'A'
+        UnivariableStatistics().main(
+            df=df,
+            variables=[
+                'Binary Factor 1',
+                'Two Categories',
+            ],
+            outcome='Obesity(1)/Normal(0)',
+            outdir=self.outdir,
+            parametric_outcome=False,
+            parametric_variables=[],
+            colors=['lightgray', 'darkgray'],
+        )
+
     def test_more_than_two_category_outcome(self):
         with self.assertRaises(ValueError) as context:
             UnivariableStatistics().main(
