@@ -100,7 +100,7 @@ class TestUnivariableStatistics(TestCase):
                 parametric_variables=[],  # no parametric features
                 colors='Set1',
             )
-        self.assertEqual(str(context.exception), 'Categorical outcome "Five Categories" with more than 2 categories is not supported yet for univariable statistics.')
+        self.assertEqual(str(context.exception), 'Outcome "Five Categories" has 5 classes, not supported for univariable statistics.')
 
     def test_parametric_continuous_outcome(self):
         UnivariableStatistics().main(

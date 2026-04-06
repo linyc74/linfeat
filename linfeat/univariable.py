@@ -54,14 +54,13 @@ class UnivariableStatistics:
 
         self.stats_data = []
 
-        if type_of(self.df[self.outcome]) == BINARY:
-            self.binary_outcome()
-        
-        elif type_of(self.df[self.outcome]) == CATEGORICAL:
-            if len(self.df[self.outcome].dropna().unique()) == 2:
+        if type_of(self.df[self.outcome]) in [BINARY, CATEGORICAL]:
+            n_outcomes = len(self.df[self.outcome].dropna().unique())
+            if n_outcomes == 2:
                 self.binary_outcome()
-            else:  # ≥ 3 categories
-                raise ValueError(f'Categorical outcome "{self.outcome}" with more than 2 categories is not supported yet for univariable statistics.')
+            else:  # 1 or ≥ 3 outcomes
+                s = '' if n_outcomes == 1 else 'es'
+                raise ValueError(f'Outcome "{self.outcome}" has {n_outcomes} class{s}, not supported for univariable statistics.')
 
         elif type_of(self.df[self.outcome]) == CONTINUOUS:
             self.continuous_outcome()
@@ -83,57 +82,58 @@ class UnivariableStatistics:
 
     def binary_outcome(self):
         for variable in self.variables:
-            if type_of(self.df[variable]) == BINARY:
-                self.fisher_exact_test(x=variable, y=self.outcome)
-            
-            elif type_of(self.df[variable]) == CATEGORICAL:
-                if len(self.df[variable].dropna().unique()) <= 2:
-                    self.fisher_exact_test(x=variable, y=self.outcome)
-                else:  # ≥ 3 categories
-                    self.chi_square_test(x=variable, y=self.outcome)
-            
+            if type_of(self.df[variable]) in [BINARY, CATEGORICAL]:
+                self.categorical_vs_categorical(x=variable, y=self.outcome)
+
             elif type_of(self.df[variable]) == CONTINUOUS:
-                if variable in self.parametric_variables:
-                    self.t_test_or_mann_whitney_u_test(x=self.outcome, y=variable, parametric=True)
-                else:
-                    self.t_test_or_mann_whitney_u_test(x=self.outcome, y=variable, parametric=False)
+                parametric = variable in self.parametric_variables
+                self.categorical_vs_continuous(x=self.outcome, y=variable, parametric=parametric)
 
     def continuous_outcome(self):
         for variable in self.variables:
-            if type_of(self.df[variable]) == BINARY:
-                self.t_test_or_mann_whitney_u_test(x=variable, y=self.outcome, parametric=self.parametric_outcome)
-            
-            elif type_of(self.df[variable]) == CATEGORICAL:
-                if len(self.df[variable].dropna().unique()) == 2:
-                    self.t_test_or_mann_whitney_u_test(x=variable, y=self.outcome, parametric=self.parametric_outcome)
-                else:  # ≥ 3 categories
-                    self.anova_or_kruskal_wallis_test(x=variable, y=self.outcome, parametric=self.parametric_outcome)
+            if type_of(self.df[variable]) in [BINARY, CATEGORICAL]:
+                self.categorical_vs_continuous(x=variable, y=self.outcome, parametric=self.parametric_outcome)
 
             elif type_of(self.df[variable]) == CONTINUOUS:
                 both_x_and_y_are_parametric = (variable in self.parametric_variables) and self.parametric_outcome
-                self.pearson_or_spearman_correlation_test(x=variable, y=self.outcome, parametric=both_x_and_y_are_parametric)
+                self.continuous_vs_continuous(x=variable, y=self.outcome, parametric=both_x_and_y_are_parametric)
 
-    def fisher_exact_test(self, x: str, y: str):
+    def categorical_vs_categorical(self, x: str, y: str):
         df = self.df.copy()[[x, y]].dropna(how='any')
 
         contingency_df = create_contingency_table(df=df, x=x, y=y)
 
-        if contingency_df.shape == (2, 2):
+        a, b = contingency_df.shape
+        if a < 2 or b < 2:
+            print(f'Warning: x="{x}", y="{y}", contingency table is {a} x {b}. Skip test.')
+            pvalue = np.nan
+            row = {
+                'Statistical Test': 'No test',
+                'x': x,
+                'y': y,
+                'p-value': pvalue,
+            }          
+        elif a == 2 and b == 2:
             pvalue = fisher_exact(contingency_df).pvalue
             odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
+            row = {
+                'Statistical Test': 'Fisher\'s exact test',
+                'x': x,
+                'y': y,
+                'p-value': pvalue,
+                'Odds Ratio (OR)': odds_ratio,
+                'OR 95% CI Lower': ci_low,
+                'OR 95% CI Upper': ci_high,
+            }
         else:
-            print(f'Warning: x="{x}", y="{y}", contingency table must be 2x2, but got {contingency_df.shape}. Skip Fisher\'s exact test.')
-            pvalue, odds_ratio, ci_low, ci_high = np.nan, np.nan, np.nan, np.nan
-
-        row = {
-            'Statistical Test': 'Fisher\'s exact test',
-            'x': x,
-            'y': y,
-            'p-value': pvalue,
-            'Odds Ratio (OR)': odds_ratio,
-            'OR 95% CI Lower': ci_low,
-            'OR 95% CI Upper': ci_high,
-        }
+            chi2, pvalue, dof, expected = chi2_contingency(contingency_df)
+            row = {
+                'Statistical Test': 'Chi-square test',
+                'x': x,
+                'y': y,
+                'p-value': pvalue,
+                'Degrees of Freedom': dof,
+            }
 
         for group, series in contingency_df.iterrows():  # each row of the contingency table is a group
             line = ' | '.join([f'{k}: {v}' for k, v in series.items()])
@@ -141,7 +141,7 @@ class UnivariableStatistics:
 
         self.stats_data.append(row)
 
-        outdir = f'{self.outdir}/Fisher\'s exact test'
+        outdir = f"{self.outdir}/{row['Statistical Test']}"
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
         StackedBarPlot().main(
             count_df=contingency_df,
@@ -150,99 +150,40 @@ class UnivariableStatistics:
             png=f'{outdir}/{png}'
         )
 
-    def chi_square_test(self, x: str, y: str):
+    def categorical_vs_continuous(self, x: str, y: str, parametric: bool):
         df = self.df.copy()[[x, y]].dropna(how='any')
-
-        contingency_df = create_contingency_table(df=df, x=x, y=y)
-
-        chi2, pvalue, dof, expected = chi2_contingency(contingency_df)
-        
-        row = {
-            'Statistical Test': 'Chi-square test',
-            'x': x,
-            'y': y,
-            'p-value': pvalue,
-            'Degrees of Freedom': dof,
-        }
-
-        for group, series in contingency_df.iterrows():  # each row of the contingency table is a group
-            line = ' | '.join([f'{k}: {v}' for k, v in series.items()])
-            row[f'Counts ({group})'] = line
-
-        self.stats_data.append(row)
-
-        outdir = f'{self.outdir}/Chi-square test'
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
-        StackedBarPlot().main(
-            count_df=contingency_df,
-            colors=self.colors,
-            title=format_(pvalue),
-            png=f'{outdir}/{png}'
-        )
-
-    def t_test_or_mann_whitney_u_test(self, x: str, y: str, parametric: bool):
-        df = self.df.copy()[[x, y]].dropna(how='any')
-
-        assert len(df[x].unique()) == 2, f'"{x}" is not binary or two-category'
         
         df.sort_values(by=x, inplace=True, ascending=True)
         
-        group_0 = df[x] == df[x].unique()[0]
-        group_1 = df[x] == df[x].unique()[1]
-        
-        vector_0 = df.loc[group_0, y]
-        vector_1 = df.loc[group_1, y]
-        
-        test = ttest_ind if parametric else mannwhitneyu
-        statistic, pvalue = test(vector_0, vector_1)
-
-        test_name = 'Student\'s t-test' if parametric else 'Mann-Whitney U test'
-        row = {
-            'Statistical Test': test_name,
-            'x': x,
-            'y': y,
-            'p-value': pvalue,
-            f'Mean ({df[x].unique()[0]})': vector_0.mean(),
-            f'Std. Dev. ({df[x].unique()[0]})': vector_0.std(),
-            f'Mean ({df[x].unique()[1]})': vector_1.mean(),
-            f'Std. Dev. ({df[x].unique()[1]})': vector_1.std(),
-        }
-        self.stats_data.append(row)
-
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
-        Boxplot().main(
-            data=df,
-            x=x,
-            y=y,
-            colors=self.colors,
-            title=format_(pvalue),
-            png=f'{self.outdir}/{test_name}/{png}'
-        )
-
-    def anova_or_kruskal_wallis_test(self, x: str, y: str, parametric: bool):
-        df = self.df.copy()[[x, y]].dropna(how='any')
-
-        df.sort_values(by=x, inplace=True, ascending=True)
-
         group_names = self.df[x].unique()  # list of strings
         group_values = [self.df[y][self.df[x] == name] for name in group_names]  # list of vectors
         group_means = [group.mean() for group in group_values]  # list of scalars
         group_std_devs = [group.std() for group in group_values]  # list of scalars
 
-        test = f_oneway if parametric else kruskal
-        statistic, pvalue = test(*group_values)
+        if len(group_names) == 1:
+            print(f'Warning: x="{x}", y="{y}", only one category. Skip test.')
+            test_name = 'No test'
+            pvalue = np.nan
+        elif len(group_names) == 2:
+            test_name = 'Student\'s t-test' if parametric else 'Mann-Whitney U test'
+            test = ttest_ind if parametric else mannwhitneyu
+            statistic, pvalue = test(*group_values)
+        else:
+            test_name = 'ANOVA' if parametric else 'Kruskal-Wallis test'
+            test = f_oneway if parametric else kruskal    
+            statistic, pvalue = test(*group_values)
 
-        test_name = 'ANOVA' if parametric else 'Kruskal-Wallis test'
         row = {
             'Statistical Test': test_name,
             'x': x,
             'y': y,
             'p-value': pvalue,
         }
+
         for name, mean, std_dev in zip(group_names, group_means, group_std_devs):
             row[f'Mean ({name})'] = mean
             row[f'Std. Dev. ({name})'] = std_dev
-
+        
         self.stats_data.append(row)
 
         png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
@@ -255,7 +196,7 @@ class UnivariableStatistics:
             png=f'{self.outdir}/{test_name}/{png}'
         )
 
-    def pearson_or_spearman_correlation_test(self, x: str, y: str, parametric: bool):
+    def continuous_vs_continuous(self, x: str, y: str, parametric: bool):
         df = self.df.copy()[[x, y]].dropna(how='any')
 
         correlation = pearsonr if parametric else spearmanr
@@ -263,7 +204,7 @@ class UnivariableStatistics:
         result = correlation(df[x], df[y])
         pvalue = result.pvalue
 
-        test_name = 'Pearson correlation test' if parametric else 'Spearman correlation test'
+        test_name = 'Pearson correlation' if parametric else 'Spearman correlation'
         self.stats_data.append({
             'Statistical Test': test_name,
             'x': x,
