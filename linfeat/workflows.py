@@ -38,6 +38,20 @@ def statistics_workflow(
         outdir=outdir)
 
 
+def feature_correlation_workflow(df: pd.DataFrame, outdir: str):
+
+    os.makedirs(outdir, exist_ok=True)
+
+    for column in df.columns:
+        if not pd.api.types.is_numeric_dtype(df[column]):
+            raise ValueError(f'Column "{column}" is not numeric.')
+        if df[column].isna().sum() > 0:
+            df[column] = df[column].fillna(df[column].mean())  # fill in missing values by the mean of the column
+
+    for method in ['pearson', 'spearman']:
+        CorrelationMatrix().main(df=df, method=method, outdir=outdir)
+
+
 def feature_selection_workflow(
         df: pd.DataFrame,
         features: List[str],
@@ -52,9 +66,6 @@ def feature_selection_workflow(
 
     df = PrepareData().main(df=df, features=features, outcome=outcome)
     df.to_csv(f'{parameters.outdir}/missing_values_filled_data.csv', encoding='utf-8-sig', index=False)
-
-    for method in ['pearson', 'spearman']:
-        CorrelationMatrix().main(df=df, parameters=parameters, method=method)
 
     core_features = [] if stepwise_core_features is None else stepwise_core_features
 

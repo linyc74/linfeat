@@ -1,7 +1,7 @@
 import pandas as pd
 from test.setup import TestCase
 from linfeat.basic import Parameters
-from linfeat.workflows import statistics_workflow, feature_selection_workflow
+from linfeat.workflows import statistics_workflow, feature_selection_workflow, feature_correlation_workflow
 
 
 class TestStatisticsWorkflow(TestCase):
@@ -65,7 +65,31 @@ class TestStatisticsWorkflow(TestCase):
             ],
             colors=['lightblue', 'tomato'],
         )
+
+
+class TestFeatureCorrelationWorkflow(TestCase):
+
+    def setUp(self):
+        self.set_up(py_path=__file__)
+        
+    def tearDown(self):
+        self.tear_down()
     
+    def test_main(self):
+        df = pd.read_csv(f'{self.indir}/data.csv', index_col=0)[[
+            'Muribaculum_intestinale',
+            'Ligilactobacillus',
+            'Thomasclavelia',
+            'Lachnospiraceae',
+            'Faecalibaculum_rodentium',
+            'Blautia',
+            'Lachnoclostridium',
+            'Erysipelotrichaceae',
+            'Lactobacillus_johnsonii',
+            'Bacteroides',
+        ]]
+        feature_correlation_workflow(df=df, outdir=self.outdir)
+
 
 class TestFeatureSelectionWorkflow(TestCase):
 

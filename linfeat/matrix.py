@@ -8,7 +8,7 @@ from scipy.stats import pearsonr, spearmanr
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import linkage, leaves_list
 from statsmodels.stats.multitest import multipletests
-from .basic import Parameters, config_matplotlib_font_for_language
+from .basic import config_matplotlib_font_for_language
 
 
 P_VALUE_CORRECTION = 'fdr_bh'  # Benjamini-Hochberg
@@ -18,23 +18,22 @@ FDR = 0.05
 class CorrelationMatrix:
 
     df: pd.DataFrame
-    parameters: Parameters
     method: str
 
     corr_df: pd.DataFrame
     p_value_df: pd.DataFrame
 
-    def main(self, df: pd.DataFrame, parameters: Parameters, method: str = 'pearson'):
+    def main(self, df: pd.DataFrame, method: str, outdir: str):
         self.df = df.copy()
-        self.parameters = parameters
         self.method = method
+        self.outdir = outdir
 
         self.compute_correlation()
         self.correct_p_values()
         self.reorder_samples_by_hierarchical_clustering()
         self.mask_by_p_value()
-        self.corr_df.to_csv(f'{self.parameters.outdir}/{self.method}_correlation_matrix.csv', encoding='utf-8-sig')
-        self.p_value_df.to_csv(f'{self.parameters.outdir}/{self.method}_p_value_adjusted_matrix.csv', encoding='utf-8-sig')
+        self.corr_df.to_csv(f'{self.outdir}/{self.method}_correlation_matrix.csv', encoding='utf-8-sig')
+        self.p_value_df.to_csv(f'{self.outdir}/{self.method}_p_value_adjusted_matrix.csv', encoding='utf-8-sig')
         self.plot_heatmap()
 
     def compute_correlation(self):
@@ -121,7 +120,7 @@ class CorrelationMatrix:
             )
             plt.tight_layout()
             suffix = '_with_color_bar' if with_color_bar else ''
-            plt.savefig(f'{self.parameters.outdir}/{self.method}_correlation_matrix{suffix}.png', dpi=600)
+            plt.savefig(f'{self.outdir}/{self.method}_correlation_matrix{suffix}.png', dpi=600)
             plt.close()
     
     def __get_figsize(self, with_color_bar: bool) -> Tuple[float, float]:
