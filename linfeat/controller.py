@@ -29,13 +29,13 @@ class Controller:
         self.action_sort_descending = ActionSortDescending(self)
         self.action_delete_selected_rows = ActionDeleteSelectedRows(self)
         self.action_delete_selected_columns = ActionDeleteSelectedColumns(self)
-        self.action_univariable_statistics = ActionUnivariableStatistics(self)
-        self.action_multivariable_regression = ActionMultivariableRegression(self)
         self.action_control_s = ActionSaveAs(self)
         self.action_control_f = ActionFind(self)
         self.action_control_z = ActionUndo(self)
         self.action_control_y = ActionRedo(self)
         self.action_set_parametric_variables = ActionSetParametricVariables(self)
+        self.action_univariable_statistics = ActionUnivariableStatistics(self)
+        self.action_multivariable_regression = ActionMultivariableRegression(self)
 
     def __connect_button_actions(self):
         for name in self.view.BUTTON_NAME_TO_LABEL.keys():
@@ -224,24 +224,6 @@ class ActionEditCell(Action):
         self.view.refresh_table()
 
 
-class ActionUnivariableStatistics(Action):
-
-    def action(self):
-        outdir = self.view.file_dialog_open_directory(caption='Select Output Directory')
-        if outdir == '':
-            return
-        self.model.univariable_statistics(outdir=outdir)
-
-
-class ActionMultivariableRegression(Action):
-
-    def action(self):
-        outdir = self.view.file_dialog_open_directory(caption='Select Output Directory')
-        if outdir == '':
-            return
-        self.model.multivariable_regression(outdir=outdir)
-
-
 class ActionUndo(Action):
 
     def action(self):
@@ -264,3 +246,28 @@ class ActionSetParametricVariables(Action):
             return
         for variable, parametric in variable_to_parametric.items():
             self.model.set_column_parametric(column=variable, parametric=parametric)
+
+
+class ActionUnivariableStatistics(Action):
+
+    def action(self):
+        outdir = self.view.file_dialog_open_directory(caption='Select Output Directory')
+        if outdir == '':
+            return
+        outcome = self.view.dialog_select_outcome()
+        if outcome is None:
+            return
+        self.model.univariable_statistics(outdir=outdir, outcome=outcome)
+
+
+class ActionMultivariableRegression(Action):
+
+    def action(self):
+        outdir = self.view.file_dialog_open_directory(caption='Select Output Directory')
+        if outdir == '':
+            return
+        outcome = self.view.dialog_select_outcome()
+        if outcome is None:
+            return
+        self.model.multivariable_regression(outdir=outdir, outcome=outcome)
+

@@ -2,7 +2,9 @@ import os
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any, Union, Tuple, Type
-from .basic import determine_variable_type
+from .univariable import UnivariableStatistics
+from .multivariable import MultivariableRegression
+from .basic import determine_variable_type, BINARY, CATEGORICAL, CONTINUOUS
 
 
 class DataPacket:
@@ -187,6 +189,38 @@ class Model:
 
     def set_column_parametric(self, column: str, parametric: bool):
         self.column_to_parametric[column] = parametric
+
+    def univariable_statistics(self, outdir: str, outcome: str):
+        df = self.dataframe.copy()
+        for c in df.columns:
+            type_ = determine_variable_type(df[c])
+            if type_ == BINARY:
+                df[c] = df[c].astype(int)
+            elif type_ == CATEGORICAL:
+                df[c] = df[c].astype(str)
+            elif type_ == CONTINUOUS:
+                df[c] = df[c].astype(float)
+
+        variables = [c for c in df.columns if c != outcome]
+        parametric_variables = [c for c in variables if self.column_to_parametric[c]]
+        UnivariableStatistics().main(
+            df=df,
+            variables=variables,
+            outcome=outcome,
+            outdir=outdir,
+            parametric_outcome=self.column_to_parametric[outcome],
+            parametric_variables=parametric_variables,
+            colors='Set1',
+        )
+
+    def multivariable_regression(self, outdir: str, outcome: str):
+        df = self.dataframe.copy().astype(float)
+        MultivariableRegression().main(
+            df=df,
+            variables=[c for c in df.columns if c != outcome],
+            outcome=outcome,
+            outdir=outdir,
+        )
 
 
 def append(

@@ -186,6 +186,7 @@ class View(QWidget):
         self.dialog_edit_cell = DialogEditCell(self)
         self.dialog_find = DialogFind(self)
         self.dialog_set_parametric_variables = DialogSetParametricVariables(self)
+        self.dialog_select_outcome = DialogSelectOutcome(self)
 
     def refresh_table(self):
         self.table.refresh_table()
@@ -576,6 +577,48 @@ class DialogSetParametricVariables:
             parametric = self.table.cellWidget(row, 1).currentText()
             ret[variable] = parametric == 'Parametric'
         return ret
+
+
+class DialogSelectOutcome:
+
+    view: View
+
+    dialog: QDialog
+    combo_box: QComboBox
+
+    def __init__(self, view: View):
+        self.view = view
+
+        self.dialog = QDialog(parent=self.view)
+        self.dialog.setWindowTitle('Select Outcome')
+        self.dialog.resize(500, 600)
+
+        self.combo_box = QComboBox(parent=self.dialog)
+
+        btn_ok = QPushButton('OK')
+        btn_ok.clicked.connect(self.dialog.accept)
+        btn_cancel = QPushButton('Cancel')
+        btn_cancel.clicked.connect(self.dialog.reject)
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(btn_ok)
+        button_row.addWidget(btn_cancel)
+
+        layout = QVBoxLayout(self.dialog)
+        layout.addWidget(self.combo_box)
+        layout.addLayout(button_row)
+
+    def __call__(self) -> Optional[str]:
+        self.combo_box.clear()
+
+        packet = self.view.model.get_data_packet()
+        variables = packet.df.columns.tolist()
+        self.combo_box.addItems(variables)
+
+        if self.dialog.exec_() == QDialog.Accepted:
+            return self.combo_box.currentText()
+        else:
+            return None
 
 
 def str_(value: Any) -> str:
