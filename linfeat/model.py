@@ -4,6 +4,9 @@ import pandas as pd
 from typing import List, Optional, Dict, Any, Union, Tuple, Type
 
 
+import time
+
+
 class Model:
 
     MAX_UNDO = 100
@@ -40,24 +43,22 @@ class Model:
 
     def open(self, file: str):
         if file.endswith('.xlsx'):
-            new = pd.read_excel(file)
+            df = pd.read_excel(file)
         elif file.endswith('.csv'): 
-            new = pd.read_csv(file)
+            df = pd.read_csv(file)
         else:  # assume tab-separated file
-            new = pd.read_csv(file, sep='\t')
+            df = pd.read_csv(file, sep='\t')
 
         self.active_file = file
 
-        for column in new.columns:
-            new[column] = new[column].astype(object)  # object, to allow mixed types
-
-        for idx in new.index:
-            for column in new.columns:
-                value = new.loc[idx, column]
-                new.loc[idx, column] = cast_to_appropriate_type(value)
+        matrix = df.to_numpy(dtype=object, copy=True)
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
+                matrix[i, j] = cast_to_appropriate_type(matrix[i, j])
+        df = pd.DataFrame(matrix, index=df.index, columns=df.columns, dtype=object)
 
         self.__add_to_undo_cache()
-        self.dataframe = new
+        self.dataframe = df
 
     def save(self, file: str):
         if file.endswith('.xlsx'):

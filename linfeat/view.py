@@ -9,6 +9,9 @@ from typing import List, Optional, Any, Dict, Tuple
 from .model import Model
 
 
+import time
+
+
 class Table(QTableWidget):
 
     model: Model
@@ -33,15 +36,17 @@ class Table(QTableWidget):
             item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             self.setHorizontalHeaderItem(i, item)
 
+        # convert to a pure numpy matrix of str to speed up
+        df = df.applymap(str_).astype(str)
+        matrix = df.to_numpy()
+
         # fill in values
-        for i in range(len(df.index)):
-            for j in range(len(df.columns)):
-                value = df.iloc[i, j]
-                item = QTableWidgetItem(str_(value))
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
+                value = matrix[i, j]
+                item = QTableWidgetItem(value)
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # makes the item immutable, i.e. user cannot edit it
                 self.setItem(i, j, item)
-
-        self.resizeColumnsToContents()
 
     def get_selected_rows(self) -> List[int]:
         ret = []
