@@ -2,16 +2,27 @@ import os
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any, Union, Tuple, Type
+from .basic import determine_variable_type
 
 
-import time
+class DataPacket:
+
+    df: pd.DataFrame
+    column_to_type: Dict[str, str]
+    column_to_parametric: Dict[str, bool]
+
+    def __init__(self, df: pd.DataFrame, column_to_type: Dict[str, str], column_to_parametric: Dict[str, bool]):
+        self.df = df
+        self.column_to_type = column_to_type
+        self.column_to_parametric = column_to_parametric
 
 
 class Model:
 
     MAX_UNDO = 100
 
-    dataframe: pd.DataFrame  # this is the main clinical data table
+    dataframe: pd.DataFrame
+    column_to_parametric: Dict[str, bool]
     active_file: Optional[str]
 
     undo_cache: List[pd.DataFrame]
@@ -19,6 +30,7 @@ class Model:
 
     def __init__(self):
         self.dataframe = pd.DataFrame()
+        self.column_to_parametric = {}
         self.active_file = None
         self.undo_cache = []
         self.redo_cache = []
@@ -59,6 +71,7 @@ class Model:
 
         self.__add_to_undo_cache()
         self.dataframe = df
+        self.column_to_parametric = {column: False for column in df.columns}
 
     def save(self, file: str):
         if file.endswith('.xlsx'):
@@ -70,12 +83,11 @@ class Model:
 
         self.active_file = file
 
-    def get_data_packet(self) -> Tuple[pd.DataFrame, Dict[str, str]]:
+    def get_data_packet(self) -> DataPacket:
         df = self.dataframe.copy()
-        column_to_type = {}
-        for column in df.columns:
-            column_to_type[column] = determine_variable_type(df[column])
-        return df, column_to_type
+        column_to_type = {c: determine_variable_type(df[c]) for c in df.columns}
+        column_to_parametric = self.column_to_parametric.copy()
+        return DataPacket(df, column_to_type, column_to_parametric)
 
     def sort_dataframe(
             self,
@@ -101,8 +113,19 @@ class Model:
         ).reset_index(
             drop=True
         )
+
+        if new.shape[0] == 0:
+            raise ValueError('Cannot drop all rows.')
+
+        if new.shape[1] == 0:
+            raise ValueError('Cannot drop all columns.')
+            
         self.__add_to_undo_cache()  # add to undo cache after successful drop
         self.dataframe = new
+
+        if columns is not None:
+            for column in columns:
+                self.column_to_parametric.pop(column)
 
     def get_row(self, row: int) -> Dict[str, Any]:
         ret = self.dataframe.loc[row].to_dict()
@@ -162,6 +185,9 @@ class Model:
                 if text.lower() in str(self.dataframe.iloc[r, c]).lower():
                     return r, self.dataframe.columns[c]
 
+    def set_column_parametric(self, column: str, parametric: bool):
+        self.column_to_parametric[column] = parametric
+
 
 def append(
         df: pd.DataFrame,
@@ -195,41 +221,3 @@ def cast_to_appropriate_type(value: Any) -> Any:
             v = int(v)
 
     return v
-
-
-#
-
-
-from typing import Iterable
-
-
-BINARY = 'binary'
-CONTINUOUS = 'continuous'
-CATEGORICAL = 'categorical'
-
-
-def determine_variable_type(series: Iterable[Any]) -> str:
-    __series = [v for v in series if not pd.isna(v)]
-
-    if len(__series) == 0:
-        raise ValueError(f'"{series}" has no valid values to determine variable type')
-
-    type_series = []
-
-    for v in __series:
-        if isinstance(v, int) or isinstance(v, float):
-            if v == 0 or v == 1:
-                type_series.append(1)  # 1 means binary
-            else:
-                type_series.append(2)  # 2 means continuous
-        elif isinstance(v, str):
-            type_series.append(3)  # 3 means categorical
-        else:
-            type_series.append(3)  # others (e.g. bool) default to 3, categorical
-
-    if max(type_series) == 1:
-        return BINARY
-    elif max(type_series) == 2:
-        return CONTINUOUS
-    else:
-        return CATEGORICAL

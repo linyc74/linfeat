@@ -35,6 +35,7 @@ class Controller:
         self.action_control_f = ActionFind(self)
         self.action_control_z = ActionUndo(self)
         self.action_control_y = ActionRedo(self)
+        self.action_set_parametric_variables = ActionSetParametricVariables(self)
 
     def __connect_button_actions(self):
         for name in self.view.BUTTON_NAME_TO_LABEL.keys():
@@ -253,3 +254,13 @@ class ActionRedo(Action):
     def action(self):
         self.model.redo()
         self.view.refresh_table()
+
+
+class ActionSetParametricVariables(Action):
+
+    def action(self):
+        variable_to_parametric = self.view.dialog_set_parametric_variables()
+        if variable_to_parametric is None:
+            return
+        for variable, parametric in variable_to_parametric.items():
+            self.model.set_column_parametric(column=variable, parametric=parametric)

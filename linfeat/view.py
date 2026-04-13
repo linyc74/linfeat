@@ -4,12 +4,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QKeySequence
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, \
     QMessageBox, QGridLayout, QDialog, QFormLayout, QDialogButtonBox, QComboBox, QScrollArea, QLineEdit, \
-    QShortcut
+    QShortcut, QAbstractItemView, QHBoxLayout
 from typing import List, Optional, Any, Dict, Tuple
 from .model import Model
-
-
-import time
+from .basic import CONTINUOUS
 
 
 class Table(QTableWidget):
@@ -22,7 +20,10 @@ class Table(QTableWidget):
         self.refresh_table()
 
     def refresh_table(self):
-        df, column_to_type = self.model.get_data_packet()
+        packet = self.model.get_data_packet()
+        df = packet.df
+        column_to_type = packet.column_to_type
+        column_to_parametric = packet.column_to_parametric
 
         self.setRowCount(len(df.index))
         self.setColumnCount(len(df.columns))
@@ -101,6 +102,7 @@ class View(QWidget):
         'delete_selected_rows': 'Delete Selected Rows',
         'delete_selected_columns': 'Delete Selected Columns',
 
+        'set_parametric_variables': 'Set Parametric Variables',
         'univariable_statistics': 'Univariable Statistics',
         'multivariable_regression': 'Multivariable Regression',
     }
@@ -119,8 +121,9 @@ class View(QWidget):
         'delete_selected_columns': (2, 2),
         'find': (3, 1),
 
-        'univariable_statistics': (0, 3),
-        'multivariable_regression': (1, 3),
+        'set_parametric_variables': (0, 3),
+        'univariable_statistics': (1, 3),
+        'multivariable_regression': (2, 3),
     }
     SHORTCUT_NAME_TO_KEY_SEQUENCE = {
         'control_s': 'Ctrl+S',
@@ -182,6 +185,7 @@ class View(QWidget):
         self.dialog_edit_row = DialogEditRow(self)
         self.dialog_edit_cell = DialogEditCell(self)
         self.dialog_find = DialogFind(self)
+        self.dialog_set_parametric_variables = DialogSetParametricVariables(self)
 
     def refresh_table(self):
         self.table.refresh_table()
@@ -369,7 +373,12 @@ class DialogEditRow:
         self.field_to_options = {}
         
         # get all possible values for each field from the model
-        df, column_to_type = self.view.model.get_data_packet()
+        packet = self.view.model.get_data_packet()
+        df = packet.df
+
+        if len(df.columns) == 0:
+            raise ValueError('Cannot add new row, the dataframe is empty.')
+
         for field in df.columns:
             unique_values = df[field].dropna().unique()
             self.field_to_options[field] = [str_(value) for value in unique_values]
@@ -475,6 +484,98 @@ class DialogEditCell(DialogLineEdits):
             return self.line_edits[0].text()
         else:
             return None
+
+
+class DialogSetParametricVariables:
+
+    PARAMETRIC_OPTIONS = ['Parametric', 'Nonparametric']
+
+    view: View
+
+    dialog: QDialog
+    table: QTableWidget
+
+    def __init__(self, view: View):
+        self.view = view
+
+        self.dialog = QDialog(parent=self.view)
+        self.dialog.setWindowTitle('Set Parametric Variables')
+        self.dialog.resize(500, 600)
+
+        self.table = QTableWidget(self.dialog)
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(['Variable', 'Parametric'])
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        btn_param = QPushButton('Set selected to Parametric')
+        btn_nonparam = QPushButton('Set selected to Nonparametric')
+        btn_ok = QPushButton('OK')
+        btn_cancel = QPushButton('Cancel')
+
+        btn_param.clicked.connect(lambda: self.set_selected_parametric('Parametric'))
+        btn_nonparam.clicked.connect(lambda: self.set_selected_parametric('Nonparametric'))
+        btn_ok.clicked.connect(self.dialog.accept)
+        btn_cancel.clicked.connect(self.dialog.reject)
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(btn_param)
+        button_row.addWidget(btn_nonparam)
+        button_row.addStretch()
+        button_row.addWidget(btn_ok)
+        button_row.addWidget(btn_cancel)
+
+        layout = QVBoxLayout(self.dialog)
+        layout.addWidget(self.table)
+        layout.addLayout(button_row)
+
+    def set_selected_parametric(self, value: str):
+        selected_rows = sorted(set(index.row() for index in self.table.selectedIndexes()))
+        for row in selected_rows:
+            combo = self.table.cellWidget(row, 1)
+            if combo is not None and combo.isEnabled():
+                combo.setCurrentText(value)
+
+    def __call__(self) -> Optional[Dict[str, str]]:
+        self.render_table()
+        if self.dialog.exec_() == QDialog.Accepted:
+            return self.get_output_dict()
+        else:
+            return None
+
+    def render_table(self):
+        packet = self.view.model.get_data_packet()
+        variable_to_type = packet.column_to_type
+        variable_to_parametric = packet.column_to_parametric
+
+        self.table.setRowCount(len(variable_to_parametric))
+
+        for row, (variable, parametric) in enumerate(variable_to_parametric.items()):
+            name_item = QTableWidgetItem(variable)
+            name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
+            self.table.setItem(row, 0, name_item)
+
+            combo = QComboBox()
+            combo.addItems(self.PARAMETRIC_OPTIONS)
+
+            current_value = 'Parametric' if parametric else 'Nonparametric'
+            combo.setCurrentText(current_value)
+
+            if not variable_to_type[variable] == CONTINUOUS:
+                combo.setEnabled(False)
+                combo.setCurrentText('Nonparametric')
+
+            self.table.setCellWidget(row, 1, combo)
+
+        self.table.resizeColumnsToContents()
+
+    def get_output_dict(self) -> Optional[Dict[str, bool]]:
+        ret = {}
+        for row in range(self.table.rowCount()):
+            variable = self.table.item(row, 0).text()
+            parametric = self.table.cellWidget(row, 1).currentText()
+            ret[variable] = parametric == 'Parametric'
+        return ret
 
 
 def str_(value: Any) -> str:
