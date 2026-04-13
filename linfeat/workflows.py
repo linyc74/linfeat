@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from .matrix import CorrelationMatrix
 from .univariable import UnivariableStatistics
 from .multivariable import MultivariableRegression

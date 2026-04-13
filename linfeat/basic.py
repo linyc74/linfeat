@@ -121,18 +121,22 @@ def determine_variable_type(series: Iterable[Any]) -> str:
     if len(__series) == 0:
         raise ValueError(f'"{series}" has no valid values to determine variable type')
 
-    for v in __series:
-        if type(v) is str:
-            return CATEGORICAL
-        elif type(v) is int:
-            if v != 0 and v != 1:
-                return CONTINUOUS
-        elif type(v) is float:
-            if v != 0.0 and v != 1.0:
-                return CONTINUOUS
-        elif type(v) is bool:
-            continue
-        else:
-            raise ValueError(f'Unknown variable type: {type(v)}')
+    type_series = []
 
-    return BINARY
+    for v in __series:
+        if isinstance(v, int) or isinstance(v, float):
+            if v == 0 or v == 1:
+                type_series.append(1)  # 1 means binary
+            else:
+                type_series.append(2)  # 2 means continuous
+        elif isinstance(v, str):
+            type_series.append(3)  # 3 means categorical
+        else:
+            type_series.append(3)  # others (e.g. bool) default to 3, categorical
+
+    if max(type_series) == 1:
+        return BINARY
+    elif max(type_series) == 2:
+        return CONTINUOUS
+    else:
+        return CATEGORICAL

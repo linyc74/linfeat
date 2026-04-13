@@ -142,7 +142,7 @@ class UnivariableStatistics:
         self.stats_data.append(row)
 
         outdir = f"{self.outdir}/{row['Statistical Test']}"
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
+        png = f"{x.replace('/', '|')} vs. {y.replace('/', '|')}.png"
         StackedBarPlot().main(
             count_df=contingency_df,
             colors=self.colors,
@@ -186,7 +186,7 @@ class UnivariableStatistics:
         
         self.stats_data.append(row)
 
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
+        png = f"{x.replace('/', '|')} vs. {y.replace('/', '|')}.png"
         Boxplot().main(
             data=df,
             x=x,
@@ -212,7 +212,7 @@ class UnivariableStatistics:
             'p-value': pvalue,   
         })
 
-        png = f'{x.replace('/', '|')} vs. {y.replace('/', '|')}.png'
+        png = f"{x.replace('/', '|')} vs. {y.replace('/', '|')}.png"
         ScatterPlot().main(
             data=df,
             x=x,
