@@ -195,7 +195,7 @@ class Model:
         for c in df.columns:
             type_ = determine_variable_type(df[c])
             if type_ == BINARY:
-                df[c] = df[c].astype(int)
+                df[c] = df[c].astype(float)  # NaN (if present) cannot be converted to int
             elif type_ == CATEGORICAL:
                 df[c] = df[c].astype(str)
             elif type_ == CONTINUOUS:

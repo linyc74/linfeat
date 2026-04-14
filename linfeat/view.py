@@ -38,7 +38,7 @@ class Table(QTableWidget):
             self.setHorizontalHeaderItem(i, item)
 
         # convert to a pure numpy matrix of str to speed up
-        df = df.applymap(str_).astype(str)
+        df = df.map(str_).astype(str)
         matrix = df.to_numpy()
 
         # fill in values
