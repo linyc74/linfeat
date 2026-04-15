@@ -192,10 +192,12 @@ class Model:
 
     def univariable_statistics(self, outdir: str, outcome: str, colors: List[str]):
         df = self.dataframe.copy()
+        assert df[outcome].notna().all(), f'Outcome "{outcome}" has missing values'
+
         for c in df.columns:
             type_ = determine_variable_type(df[c])
             if type_ == BINARY:
-                df[c] = df[c].astype(float)  # NaN (if present) cannot be converted to int
+                df[c] = df[c].astype(int)
             elif type_ == CATEGORICAL:
                 df[c] = df[c].astype(str)
             elif type_ == CONTINUOUS:
