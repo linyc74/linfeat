@@ -190,7 +190,7 @@ class Model:
     def set_column_parametric(self, column: str, parametric: bool):
         self.column_to_parametric[column] = parametric
 
-    def univariable_statistics(self, outdir: str, outcome: str):
+    def univariable_statistics(self, outdir: str, outcome: str, colors: List[str]):
         df = self.dataframe.copy()
         for c in df.columns:
             type_ = determine_variable_type(df[c])
@@ -210,7 +210,7 @@ class Model:
             outdir=outdir,
             parametric_outcome=self.column_to_parametric[outcome],
             parametric_variables=parametric_variables,
-            colors='Set1',
+            colors=colors,
         )
 
     def multivariable_regression(self, outdir: str, outcome: str):

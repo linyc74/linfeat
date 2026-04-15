@@ -257,7 +257,10 @@ class ActionUnivariableStatistics(Action):
         outcome = self.view.dialog_select_outcome()
         if outcome is None:
             return
-        self.model.univariable_statistics(outdir=outdir, outcome=outcome)
+        colors = self.view.dialog_colors()
+        if colors is None:
+            return
+        self.model.univariable_statistics(outdir=outdir, outcome=outcome, colors=colors)
 
 
 class ActionMultivariableRegression(Action):
