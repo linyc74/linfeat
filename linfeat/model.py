@@ -1,4 +1,5 @@
 import os
+import datetime
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any, Union, Tuple, Type
@@ -243,6 +244,8 @@ def cast_to_appropriate_type(value: Any) -> Any:
     
     # str to float, if possible
     if isinstance(v, str):
+        v = v.strip()  # remove preceding and trailing whitespace
+        
         if v in ['', 'nan', 'NaN', 'N/A', 'n/a', 'na', 'NA', 'null', 'None', 'none']:
             v = np.nan  # np.nan is float
         else:
