@@ -56,11 +56,10 @@ class UnivariableStatistics:
 
         if type_of(self.df[self.outcome]) in [BINARY, CATEGORICAL]:
             n_outcomes = len(self.df[self.outcome].dropna().unique())
-            if n_outcomes == 2:
-                self.binary_outcome()
-            else:  # 1 or ≥ 3 outcomes
+            if n_outcomes == 1 or n_outcomes > 2:
                 s = '' if n_outcomes == 1 else 'es'
                 raise ValueError(f'Outcome "{self.outcome}" has {n_outcomes} class{s}, not supported for univariable statistics.')
+            self.binary_outcome()
 
         elif type_of(self.df[self.outcome]) == CONTINUOUS:
             self.continuous_outcome()
@@ -88,6 +87,12 @@ class UnivariableStatistics:
             elif type_of(self.df[variable]) == CONTINUOUS:
                 parametric = variable in self.parametric_variables
                 self.categorical_vs_continuous(x=self.outcome, y=variable, parametric=parametric)
+
+        self.outcome_to_count = self.df[self.outcome].value_counts().to_dict()
+        WriteBinaryOutcomeSummaryTable().main(
+            stats_data=self.stats_data,
+            outcome_to_count=self.outcome_to_count,
+            outdir=self.outdir)
 
     def continuous_outcome(self):
         for variable in self.variables:
@@ -135,7 +140,7 @@ class UnivariableStatistics:
                 'Degrees of Freedom': dof,
             }
 
-        for group, series in contingency_df.iterrows():  # each row of the contingency table is a group
+        for group, series in contingency_df.iterrows():  # each row of the contingency table is a group of y
             line = ' | '.join([f'{k}: {v}' for k, v in series.items()])
             row[f'Counts ({group})'] = line
 
@@ -236,6 +241,99 @@ class UnivariableStatistics:
         columns.insert(p_pos + 1, 'p-adjust')  # 'p-value' and then 'p-adjust'
         columns = columns[:-1]  # remove the very last 'p-adjust' column
         self.stats_df = self.stats_df.reindex(columns=columns)
+
+
+class WriteBinaryOutcomeSummaryTable:
+
+    stats_data: List[Dict[str, Any]]
+    outcome_to_count: Dict[Union[str, int], int]
+    outdir: str
+
+    summary_df: pd.DataFrame
+    idx: int
+
+    def main(
+            self, 
+            stats_data: List[Dict[str, Any]],
+            outcome_to_count: Dict[Union[str, int], int],
+            outdir: str):
+
+        self.stats_data = stats_data
+        self.outcome_to_count = outcome_to_count
+        self.outdir = outdir
+
+        self.init_summary_df()
+
+        for stat in self.stats_data:
+            test = stat['Statistical Test']
+            if test in ['Fisher\'s exact test', 'Chi-square test']:
+                self.categorical_vs_categorical_summary(stat)
+            elif test in ['Student\'s t-test', 'Mann-Whitney U test']:
+                self.categorical_vs_continuous_summary(stat)
+            else:
+                print(f'Warning: "{test}" is not supported for binary outcome summary table. Skip.')
+        
+        self.rename_summary_columns()
+
+        self.summary_df.to_csv(f'{self.outdir}/summary.csv', encoding='utf-8-sig', index=False)
+    
+    def init_summary_df(self):
+        columns = ['Variable']
+        columns += list(self.outcome_to_count.keys())
+        columns += ['Odds Ratio (95% CI)', 'p-value']
+        self.summary_df = pd.DataFrame(columns=columns)
+        self.idx = 0
+
+    def categorical_vs_categorical_summary(self, stat: Dict[str, Any]):
+        variable = stat['x']
+        p = stat['p-value']
+        OR = stat.get('Odds Ratio (OR)', np.nan)
+        ci_low = stat.get('OR 95% CI Lower', np.nan)
+        ci_high = stat.get('OR 95% CI Upper', np.nan)
+
+        self.summary_df.loc[self.idx, 'Variable'] = variable
+        self.summary_df.loc[self.idx, 'p-value'] = f'{p:.3f}' if p >= 0.001 else '< 0.001'
+        if pd.notna(OR):  # Chi-square test has no OR
+            self.summary_df.loc[self.idx, 'Odds Ratio (95% CI)'] = f'{OR:.2f} ({ci_low:.2f}, {ci_high:.2f})'
+        
+        self.idx += 1  # to the next line to write detailed counts per category
+
+        matrix = self._confusion_matrix(stat)  # variable rows, outcome columns
+        for category in matrix.index:  # each row is a category of the variable
+            for outcome in matrix.columns:
+                count = matrix.loc[category, outcome]
+                self.summary_df.loc[self.idx, 'Variable'] = category
+                self.summary_df.loc[self.idx, outcome] = count
+            self.idx += 1  # next line to write the next category
+
+    def _confusion_matrix(self, stat: Dict[str, Any]) -> pd.DataFrame:
+        outcomes = self.outcome_to_count.keys()
+        df = pd.DataFrame(columns=outcomes, dtype=int)
+        for outcome in outcomes:
+            count_str = stat[f'Counts ({outcome})']
+            count_items = count_str.split(' | ')
+            for item in count_items:
+                key, value = item.split(': ')
+                df.loc[key, outcome] = int(value)
+        return df
+
+    def categorical_vs_continuous_summary(self, stat: Dict[str, Any]):
+        variable = stat['y']
+        p = stat['p-value']
+        self.summary_df.loc[self.idx, 'Variable'] = stat['y']
+        self.summary_df.loc[self.idx, 'p-value'] = f'{p:.3f}' if p >= 0.001 else '< 0.001'
+
+        for outcome in self.outcome_to_count.keys():
+            mean = stat[f'Mean ({outcome})']
+            std = stat[f'Std. Dev. ({outcome})']
+            self.summary_df.loc[self.idx, outcome] = f'{mean:.2f} ± {std:.2f}'
+        
+        self.idx += 1
+
+    def rename_summary_columns(self):
+        for outcome, count in self.outcome_to_count.items():
+            mapping = {outcome: f'{outcome} (N = {count})'}
+            self.summary_df.rename(columns=mapping, inplace=True)
 
 
 def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
