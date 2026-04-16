@@ -96,13 +96,27 @@ class Model:
             self,
             by: str,
             ascending: bool):
-        new = self.dataframe.sort_values(
+        new = self.dataframe.copy()
+
+        # str cannot be compared with float/int, so we need to convert all to str in that case
+        dtypes = set()
+        for value in new[by]:
+            dtypes.add(type(value))
+        if str in dtypes and (float in dtypes or int in dtypes):
+            new['sorting'] = new[by].astype(str)
+            by = 'sorting'
+
+        new = new.sort_values(
             by=by,
             ascending=ascending,
             kind='mergesort'  # deterministic, keep the original order when tied
         ).reset_index(
             drop=True
         )
+
+        if by == 'sorting':
+            new.drop(columns=['sorting'], inplace=True)
+
         self.__add_to_undo_cache()  # add to undo cache after successful sort
         self.dataframe = new
 
