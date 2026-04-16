@@ -261,6 +261,7 @@ class ActionUnivariableStatistics(Action):
         if colors is None:
             return
         self.model.univariable_statistics(outdir=outdir, outcome=outcome, colors=colors)
+        self.view.message_box_info(msg='Univariable statistics completed')
 
 
 class ActionMultivariableRegression(Action):
@@ -273,4 +274,5 @@ class ActionMultivariableRegression(Action):
         if outcome is None:
             return
         self.model.multivariable_regression(outdir=outdir, outcome=outcome)
+        self.view.message_box_info(msg='Multivariable regression completed')
 
