@@ -91,7 +91,7 @@ class ActionOpen(Action):
 class ActionSaveAs(Action):
 
     def action(self):
-        file = self.view.file_dialog_save_table(filename='new.csv')
+        file = self.view.file_dialog_save_table(filename='New Table.xlsx')
         if file == '':
             return
         self.model.save(file=file)

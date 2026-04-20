@@ -229,8 +229,13 @@ class FileDialogOpenTable(FileDialog):
         d = QFileDialog(self.view)
         d.resize(1200, 800)
         d.setWindowTitle('Open')
-        d.setNameFilter('All Files (*.*);;CSV files (*.csv);;Excel files (*.xlsx)')
-        d.selectNameFilter('CSV files (*.csv)')
+        d.setNameFilters([
+            'All Files (*.*)',
+            'Excel Files (*.xlsx)',
+            'Comma-Separated Files (*.csv)',
+            'Tab-Delimited Files (*.tsv *.tab *.txt)',
+        ])
+        d.selectNameFilter('Excel Files (*.xlsx)')
         d.setOptions(QFileDialog.DontUseNativeDialog)
         d.setFileMode(QFileDialog.ExistingFile)  # only one existing file can be selected
         d.exec_()
@@ -245,8 +250,13 @@ class FileDialogSaveTable(FileDialog):
         d.resize(1200, 800)
         d.setWindowTitle('Save As')
         d.selectFile(filename)
-        d.setNameFilter('All Files (*.*);;CSV files (*.csv);;Excel files (*.xlsx)')
-        d.selectNameFilter('CSV files (*.csv)')
+        d.setNameFilters([
+            'All Files (*.*)',
+            'Excel Files (*.xlsx)',
+            'Comma-Separated Files (*.csv)',
+            'Tab-Delimited Files (*.tsv *.tab *.txt)',
+        ])
+        d.selectNameFilter('Excel Files (*.xlsx)')
         d.setOptions(QFileDialog.DontUseNativeDialog)
         d.setAcceptMode(QFileDialog.AcceptSave)
         response = d.exec_()
