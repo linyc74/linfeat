@@ -147,7 +147,7 @@ class UnivariableStatistics:
         self.stats_data.append(row)
 
         outdir = f"{self.outdir}/{row['Statistical Test']}"
-        png = f"{x.replace('/', '|')} vs. {y.replace('/', '|')}.png"
+        png = f'{replace_invalid_path_chars(x)} vs. {replace_invalid_path_chars(y)}.png'
         StackedBarPlot().main(
             count_df=contingency_df,
             colors=self.colors,
@@ -191,7 +191,7 @@ class UnivariableStatistics:
         
         self.stats_data.append(row)
 
-        png = f"{x.replace('/', '|')} vs. {y.replace('/', '|')}.png"
+        png = f'{replace_invalid_path_chars(x)} vs. {replace_invalid_path_chars(y)}.png'
         Boxplot().main(
             data=df,
             x=x,
@@ -217,7 +217,7 @@ class UnivariableStatistics:
             'p-value': pvalue,   
         })
 
-        png = f"{x.replace('/', '|')} vs. {y.replace('/', '|')}.png"
+        png = f'{replace_invalid_path_chars(x)} vs. {replace_invalid_path_chars(y)}.png'
         ScatterPlot().main(
             data=df,
             x=x,
@@ -392,6 +392,10 @@ def calculate_odds_ratio(contingency_df: pd.DataFrame) -> Tuple[float, float, fl
 
 def format_(pvalue: float) -> str:
     return f'$p < 0.001$' if pvalue < 0.001 else f'$p = {pvalue:.3f}$'
+
+
+def replace_invalid_path_chars(s: str) -> str:
+    return s.replace('\\', '').replace('/', '|').replace(':', '_').replace('*', '_').replace('?', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_').replace('\n', '_')
 
 
 class StackedBarPlot:
