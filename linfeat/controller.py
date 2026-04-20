@@ -1,7 +1,9 @@
 import shutil
+import pandas as pd
 from typing import Dict, Optional
 from .view import View
 from .model import Model
+from .basic import CONTINUOUS
 
 
 class Controller:
@@ -15,6 +17,12 @@ class Controller:
         self.__init_actions()
         self.__connect_button_actions()
         self.__connect_short_actions()
+        
+        # testing
+        self.model.open(file='~/Desktop/01 Total.csv')
+        self.view.refresh_table()
+        p = self.model.get_data_packet()
+        print(p.df['Age'])
 
     def __init_actions(self):
         self.action_open = ActionOpen(self)
@@ -36,6 +44,7 @@ class Controller:
         self.action_set_parametric_variables = ActionSetParametricVariables(self)
         self.action_univariable_statistics = ActionUnivariableStatistics(self)
         self.action_multivariable_regression = ActionMultivariableRegression(self)
+        self.action_stratify_convert = ActionStratifyConvert(self)
 
     def __connect_button_actions(self):
         for name in self.view.BUTTON_NAME_TO_LABEL.keys():
@@ -276,3 +285,63 @@ class ActionMultivariableRegression(Action):
         self.model.multivariable_regression(outdir=outdir, outcome=outcome)
         self.view.message_box_info(msg='Multivariable regression completed')
 
+
+class ActionStratifyConvert(Action):
+
+    def action(self):
+        columns = self.view.get_selected_columns()
+        if len(columns) == 0:
+            self.view.message_box_error(msg='Please select a column')
+            return
+        elif len(columns) > 1:
+            self.view.message_box_error(msg='Please select only one column')
+            return
+        column = columns[0]
+
+        packet = self.model.get_data_packet()
+        df = packet.df
+        if packet.column_to_type[column] == CONTINUOUS:
+            self.stratify_continous_variable(df=df, column=column)
+        else:
+            self.convert_categorical_variable(df=df, column=column)
+
+    def stratify_continous_variable(self, df: pd.DataFrame, column: str):
+        cutoffs = self.view.dialog_stratify(minimum=df[column].min(), maximum=df[column].max())
+        if cutoffs is None:
+            return
+
+        cutoffs = [df[column].min()] + cutoffs + [df[column].max()]
+        old_to_new = {}
+        intervals = []
+        for i in range(len(cutoffs) - 1):
+            a = cutoffs[i]
+            b = cutoffs[i + 1]
+            intervals.append((a, b))
+            old_to_new[f'{a} - {b}'] = i + 1
+
+        old_to_new = self.view.dialog_convert(old_to_new=old_to_new)
+        if old_to_new is None:
+            return
+        
+        labels = list(old_to_new.values())
+
+        new_column = self.view.dialog_new_column_name(name=f'{column} - Stratified')
+        if new_column is None:
+            return
+
+        self.model.stratify(column=column, intervals=intervals, labels=labels, new_column=new_column)
+        self.view.refresh_table()
+    
+    def convert_categorical_variable(self, df: pd.DataFrame, column: str):
+        old_to_new = {value: value for value in df[column].unique()}
+        
+        old_to_new = self.view.dialog_convert(old_to_new=old_to_new)
+        if old_to_new is None:
+            return
+        
+        new_column = self.view.dialog_new_column_name(name=f'{column} - Converted')
+        if new_column is None:
+            return
+        
+        self.model.convert(column=column, old_to_new=old_to_new, new_column=new_column)
+        self.view.refresh_table()

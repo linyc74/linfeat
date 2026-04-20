@@ -58,11 +58,11 @@ class Model:
 
     def open(self, file: str):
         if file.endswith('.xlsx'):
-            df = pd.read_excel(file)
+            df = pd.read_excel(file, keep_default_na=False, dtype=object)
         elif file.endswith('.csv'): 
-            df = pd.read_csv(file)
+            df = pd.read_csv(file, keep_default_na=False, dtype=object)
         else:  # assume tab-separated file
-            df = pd.read_csv(file, sep='\t')
+            df = pd.read_csv(file, sep='\t', keep_default_na=False, dtype=object)
 
         self.active_file = file
 
@@ -205,6 +205,64 @@ class Model:
     def set_column_parametric(self, column: str, parametric: bool):
         self.column_to_parametric[column] = parametric
 
+    def stratify(
+            self,
+            column: str,
+            intervals: List[Tuple[float, float]],
+            labels: List[str],
+            new_column: str):
+
+        assert len(labels) == len(intervals), f'Number of labels must match number of intervals. labels: {labels}; intervals: {intervals}.'
+        assert new_column not in self.dataframe.columns, f'Column "{new_column}" already exists.'
+
+        df = self.dataframe.copy()
+        
+        df[new_column] = pd.Series(data=np.nan, dtype=object)  # instantiate with object dtype
+        for interval, label in zip(intervals, labels):
+            a, b = interval
+            within_interval = (a <= df[column]) & (df[column] < b)
+            df.loc[within_interval, new_column] = label
+        
+        # fill in the value that equals the upper bound
+        upper_bound = intervals[-1][1]
+        df.loc[df[column] == upper_bound, new_column] = label[-1]
+
+        # move the new column to the right of the original column
+        columns = df.columns.tolist()
+        pos = columns.index(column) + 1
+        reordered = columns[:pos] + [new_column] + columns[pos:-1]
+        df = df[reordered]
+
+        self.__add_to_undo_cache()  # add to undo cache after successful stratify
+        self.dataframe = df
+        self.column_to_parametric[new_column] = False
+
+    def convert(
+            self,
+            column: str,
+            old_to_new: Dict[Any, str],
+            new_column: str):
+        assert new_column not in self.dataframe.columns, f'Column "{new_column}" already exists.'
+
+        df = self.dataframe.copy()
+
+        new_values = []
+        for old in df[column]:
+            new = old_to_new.get(old, np.nan)
+            new_values.append(cast_to_appropriate_type(new))
+
+        df[new_column] = pd.Series(data=new_values, dtype=object)
+        
+        # move the new column to the right of the original column
+        columns = df.columns.tolist()
+        pos = columns.index(column) + 1
+        reordered = columns[:pos] + [new_column] + columns[pos:-1]
+        df = df[reordered]
+
+        self.__add_to_undo_cache()  # add to undo cache after successful convert
+        self.dataframe = df
+        self.column_to_parametric[new_column] = False
+
     def univariable_statistics(self, outdir: str, outcome: str, colors: List[str]):
         df = self.dataframe.copy()
         assert df[outcome].notna().all(), f'Outcome "{outcome}" has missing values'
@@ -260,7 +318,7 @@ def cast_to_appropriate_type(value: Any) -> Any:
     if isinstance(v, str):
         v = v.strip()  # remove preceding and trailing whitespace
         
-        if v in ['', 'nan', 'NaN', 'N/A', 'n/a', 'na', 'NA', 'null', 'None', 'none']:
+        if v == '':
             v = np.nan  # np.nan is float
         else:
             try:
