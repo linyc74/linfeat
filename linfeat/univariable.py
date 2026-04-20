@@ -341,12 +341,7 @@ def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
 
     for var in [x, y]:
         assert df[var].notna().all(), f'"{var}" has missing values'
-
-    for var in [x, y]:
-        if type_of(df[var]) == BINARY:
-            df[var] = df[var].astype(int).astype(str)  # 1.0 -> 1 -> '1'
-        else:
-            df[var] = df[var].astype(str)
+        df[var] = df[var].astype(str)
         
     outdf = pd.DataFrame(
         columns=df[x].sort_values().unique(),

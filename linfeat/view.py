@@ -249,9 +249,12 @@ class FileDialogSaveTable(FileDialog):
         d.selectNameFilter('CSV files (*.csv)')
         d.setOptions(QFileDialog.DontUseNativeDialog)
         d.setAcceptMode(QFileDialog.AcceptSave)
-        d.exec_()
-        selected = d.selectedFiles()
-        return selected[0] if len(selected) > 0 else ''
+        response = d.exec_()
+        if response == QFileDialog.Accepted:
+            selected = d.selectedFiles()
+            if len(selected) > 0:
+                return selected[0]
+        return ''
 
 
 class FileDialogOpenDirectory(FileDialog):
@@ -262,9 +265,12 @@ class FileDialogOpenDirectory(FileDialog):
         d.setWindowTitle(caption)
         d.setOptions(QFileDialog.DontUseNativeDialog)
         d.setFileMode(QFileDialog.DirectoryOnly)  # only one directory can be selected
-        d.exec_()
-        selected = d.selectedFiles()
-        return selected[0] if len(selected) > 0 else ''
+        response = d.exec_()
+        if response == QFileDialog.Accepted:
+            selected = d.selectedFiles()
+            if len(selected) > 0:
+                return selected[0]
+        return ''
 
 
 class MessageBox:
