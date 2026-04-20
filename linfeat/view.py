@@ -97,11 +97,11 @@ class View(QWidget):
         'save_as': 'Save As...',
         'add_new_row': 'Add New Row',
         'edit_row': 'Edit Row',
-        'edit_cell': 'Edit Cell',
+        # 'edit_cell': 'Edit Cell',  # hidden
 
         'undo': 'Undo',
         'redo': 'Redo',
-        'find': 'Find',
+        # 'find': 'Find',  # hidden
         'sort_ascending': 'Sort (A to Z)',
         'sort_descending': 'Sort (Z to A)',
         'delete_selected_rows': 'Delete Selected Rows',

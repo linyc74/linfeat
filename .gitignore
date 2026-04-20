@@ -21,5 +21,12 @@ test/test_*/
 test/*outdir*/
 test/*workdir*/
 
+# PyInstaller / py2app
+build/
+dist/
+*.app/
+*.spec
+*.zip
+setup.py
+
 todo.md
-temp.py

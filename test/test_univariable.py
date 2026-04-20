@@ -189,7 +189,7 @@ class TestCreateContingencyTable(TestCase):
         )
         actual = create_contingency_table(df=df, x='x', y='y')
         expected = pd.DataFrame(
-            columns=['0', '1'],
+            columns=['0.0', '1.0'],
             index=['0', '1'],
             data=[
                 [1, 1],

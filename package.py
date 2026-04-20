@@ -26,5 +26,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # To build the package:
-    # python setup.py sdist && rm -r linfeat.egg-info
+    # python package.py sdist && rm -r linfeat.egg-info
