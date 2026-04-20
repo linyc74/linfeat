@@ -221,11 +221,11 @@ class Model:
         for interval, label in zip(intervals, labels):
             a, b = interval
             within_interval = (a <= df[column]) & (df[column] < b)
-            df.loc[within_interval, new_column] = label
+            df.loc[within_interval, new_column] = cast_to_appropriate_type(label)
         
         # fill in the value that equals the upper bound
         upper_bound = intervals[-1][1]
-        df.loc[df[column] == upper_bound, new_column] = label[-1]
+        df.loc[df[column] == upper_bound, new_column] = cast_to_appropriate_type(labels[-1])
 
         # move the new column to the right of the original column
         columns = df.columns.tolist()
@@ -270,7 +270,10 @@ class Model:
         for c in df.columns:
             type_ = determine_variable_type(df[c])
             if type_ == BINARY:
-                df[c] = df[c].astype(int)
+                if df[c].isna().any():
+                    df[c] = df[c].astype(float)  # missing values (np.nan) cannot be converted to int
+                else:
+                    df[c] = df[c].astype(int)  # no missing, convert all to int
             elif type_ == CATEGORICAL:
                 df[c] = df[c].astype(str)
             elif type_ == CONTINUOUS:

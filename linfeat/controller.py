@@ -17,12 +17,6 @@ class Controller:
         self.__init_actions()
         self.__connect_button_actions()
         self.__connect_short_actions()
-        
-        # testing
-        self.model.open(file='~/Desktop/01 Total.csv')
-        self.view.refresh_table()
-        p = self.model.get_data_packet()
-        print(p.df['Age'])
 
     def __init_actions(self):
         self.action_open = ActionOpen(self)

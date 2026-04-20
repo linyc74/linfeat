@@ -314,7 +314,7 @@ class MessageBoxYesNo(MessageBox):
 class DialogEditRow:
 
     WIDTH = 600
-    HEIGHT =800
+    HEIGHT = 600
 
     view: QWidget
 
@@ -407,7 +407,7 @@ class DialogEditRow:
             combo.addItems(options)
             combo.setEditable(True)
             self.field_to_combo_boxes[field] = combo
-            self.form_layout.addRow(to_title(field), combo)
+            self.form_layout.addRow(field, combo)
     
     def set_combo_box_text(self, attributes: Optional[Dict[str, Any]] = None):
         if attributes is None:  # set all to empty string
@@ -1167,25 +1167,38 @@ class DialogConvert:
 
     dialog: QDialog
     form_layout: QFormLayout
-    old_to_line_edits: Dict[int | float | str, QLineEdit]
+    old_to_line_edits: Dict[Any, QLineEdit]
+
+    scroll_area: QScrollArea
+    scroll_widget: QWidget
 
     def __init__(self, view: View):
         self.view = view
 
         self.dialog = QDialog(parent=self.view)
-        self.dialog.setWindowTitle('Convert')
+        self.dialog.setWindowTitle("Convert")
+        self.dialog.resize(500, 600)
 
-        layout = QVBoxLayout(self.dialog)
-        self.form_layout = QFormLayout()
-        layout.addLayout(self.form_layout)
+        main_layout = QVBoxLayout(self.dialog)
 
+        # Scrollable form area
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+
+        self.scroll_widget = QWidget()
+        self.form_layout = QFormLayout(self.scroll_widget)
+
+        self.scroll_area.setWidget(self.scroll_widget)
+        main_layout.addWidget(self.scroll_area)
+
+        # OK / Cancel buttons
         button_box = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         )
         button_box.accepted.connect(self.dialog.accept)
         button_box.rejected.connect(self.dialog.reject)
 
-        layout.addWidget(button_box)
+        main_layout.addWidget(button_box)
 
         self.old_to_line_edits = {}
 
@@ -1207,11 +1220,15 @@ class DialogConvert:
         if result != QDialog.Accepted:
             return None
 
-        return {old: line_edit.text() for old, line_edit in self.old_to_line_edits.items()}
+        return {
+            old: line_edit.text()
+            for old, line_edit in self.old_to_line_edits.items()
+        }
 
     def clear_form(self):
         while self.form_layout.rowCount() > 0:
             self.form_layout.removeRow(0)
+
         self.old_to_line_edits.clear()
 
 
@@ -1236,29 +1253,3 @@ def str_(value: Any) -> str:
     Converts to str for GUI display
     """
     return '' if pd.isna(value) else str(value)
-
-
-def to_title(s: str) -> str:
-    """
-    'Title of good and evil' -> 'Title of Good and Evil'
-    'title_of_good_and_evil' -> 'Title of Good and Evil'
-    """
-    skip = [
-        'of',
-        'and',
-        'or',
-        'on',
-        'after',
-        'about',
-        'mAb',  # monoclonal antibody
-    ]
-
-    words = s.replace('_', ' ').split(' ')
-
-    for i, word in enumerate(words):
-        if word in skip:
-            continue
-        words[i] = word[0].upper() + word[1:]  # only capitalize the first letter
-
-    return ' '.join(words)
-
