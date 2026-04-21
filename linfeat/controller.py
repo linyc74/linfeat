@@ -27,6 +27,7 @@ class Controller:
         self.action_undo = ActionUndo(self)
         self.action_redo = ActionRedo(self)
         self.action_find = ActionFind(self)
+        self.action_rename_column = ActionRenameColumn(self)
         self.action_sort_ascending = ActionSortAscending(self)
         self.action_sort_descending = ActionSortDescending(self)
         self.action_delete_selected_rows = ActionDeleteSelectedRows(self)
@@ -338,4 +339,22 @@ class ActionStratifyConvert(Action):
             return
         
         self.model.convert(column=column, old_to_new=old_to_new, new_column=new_column)
+        self.view.refresh_table()
+
+
+class ActionRenameColumn(Action):
+
+    def action(self):
+        columns = self.view.get_selected_columns()
+        if len(columns) == 0:
+            self.view.message_box_error(msg='Please select a column')
+            return
+        elif len(columns) > 1:
+            self.view.message_box_error(msg='Please select only one column')
+            return
+        column = columns[0]
+        new_name = self.view.dialog_rename_column(name=column)
+        if new_name is None:
+            return
+        self.model.rename_column(column=column, new_name=new_name)
         self.view.refresh_table()

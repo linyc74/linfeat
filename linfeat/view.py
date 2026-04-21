@@ -101,11 +101,12 @@ class View(QWidget):
 
         'undo': 'Undo',
         'redo': 'Redo',
-        # 'find': 'Find',  # hidden
         'sort_ascending': 'Sort (A to Z)',
         'sort_descending': 'Sort (Z to A)',
         'delete_selected_rows': 'Delete Selected Rows',
         'delete_selected_columns': 'Delete Selected Columns',
+        # 'find': 'Find',  # hidden
+        'rename_column': 'Rename Column',
 
         'stratify_convert': 'Stratify / Convert',
         'set_parametric_variables': 'Set Parametric Variables',
@@ -126,6 +127,7 @@ class View(QWidget):
         'delete_selected_rows': (2, 1),
         'delete_selected_columns': (2, 2),
         'find': (3, 1),
+        'rename_column': (3, 2),
 
         'stratify_convert': (0, 3),
         'set_parametric_variables': (1, 3),
@@ -198,6 +200,7 @@ class View(QWidget):
         self.dialog_stratify = DialogStratify(self)
         self.dialog_convert = DialogConvert(self)
         self.dialog_new_column_name = DialogNewColumnName(self)
+        self.dialog_rename_column = DialogRenameColumn(self)
     
     def refresh_table(self):
         self.table.refresh_table()
@@ -1252,6 +1255,22 @@ class DialogNewColumnName(DialogLineEdits):
 
     LINE_TITLES = [
         'New Column:',
+    ]
+    LINE_DEFAULTS = [
+        '',
+    ]
+
+    def __call__(self, name: str) -> Optional[str]:
+        self.line_edits[0].setText(name)
+        if self.dialog.exec_() == QDialog.Accepted:
+            return self.line_edits[0].text()
+        return None
+
+
+class DialogRenameColumn(DialogLineEdits):
+    
+    LINE_TITLES = [
+        'Rename Column:',
     ]
     LINE_DEFAULTS = [
         '',

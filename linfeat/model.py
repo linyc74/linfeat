@@ -263,6 +263,20 @@ class Model:
         self.dataframe = df
         self.column_to_parametric[new_column] = False
 
+    def rename_column(self, column: str, new_name: str):
+        if new_name == column:
+            return
+
+        df = self.dataframe.copy()
+        assert new_name not in df.columns, f'Column "{new_name}" already exists'
+        df.rename(columns={column: new_name}, inplace=True)
+
+        self.__add_to_undo_cache()  # add to undo cache after successful rename
+        self.dataframe = df
+
+        self.column_to_parametric[new_name] = self.column_to_parametric[column]
+        self.column_to_parametric.pop(column)
+
     def univariable_statistics(self, outdir: str, outcome: str, colors: List[str]):
         df = self.dataframe.copy()
         assert df[outcome].notna().all(), f'Outcome "{outcome}" has missing values'
