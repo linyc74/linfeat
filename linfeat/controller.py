@@ -18,6 +18,10 @@ class Controller:
         self.__connect_button_actions()
         self.__connect_short_actions()
 
+        # for testing
+        self.model.open(file='~/Desktop/small.csv')
+        self.view.refresh_table()
+
     def __init_actions(self):
         self.action_open = ActionOpen(self)
         self.action_save_as = ActionSaveAs(self)

@@ -942,14 +942,14 @@ class LabeledRangeSlider(QRangeSlider):
     self.value() is the list of positions (int) of the handles
 
     self.grid_values is the list of grid values (str)
-    self.handlePressed emits the grid value (str) at which the handle is pressed
+    self.handlePressed emits the position (int) at which the handle is pressed
     """
 
     N_STEPS = 1000
 
     grid_values: List[str]
 
-    handlePressed = pyqtSignal(str)
+    handlePressed = pyqtSignal(int)
 
     def __init__(self, parent: QDialog):
         super().__init__(parent=parent, orientation=Qt.Horizontal)
@@ -1016,19 +1016,21 @@ class LabeledRangeSlider(QRangeSlider):
 
         return [self.grid_values[pos] for pos in self.value()]
 
-    def remove_cutoff(self, value: str):
+    def remove_cutoff(self, position: int):
         if len(self.value()) == 1:
             return  # do nothing if only one cutoff left
 
-        pos = self.grid_values.index(value)
         current_positions = list(self.value())
-        if pos in current_positions:
-            current_positions.remove(pos)
+        if position in current_positions:
+            current_positions.remove(position)
 
         self.setValue(current_positions)
 
-    def get_cutoffs(self) -> List[str]:
-        return [self.grid_values[pos] for pos in self.value()]
+    def get_cutoffs(self) -> Dict[int, str]:
+        ret = {}
+        for position in self.value():
+            ret[position] = self.grid_values[position]
+        return ret
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -1052,14 +1054,14 @@ class LabeledRangeSlider(QRangeSlider):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            cutoff = self._nearest_cutoff(event.x())
+            position = self._nearest_handle_position(event.x())
 
-            if cutoff is not None:
-                self.handlePressed.emit(cutoff)
+            if position is not None:
+                self.handlePressed.emit(position)
 
         super().mousePressEvent(event)
 
-    def _nearest_cutoff(self, x) -> Optional[str]:
+    def _nearest_handle_position(self, x) -> Optional[int]:
         handle_positions = list(self.value())
 
         min_distance = None
@@ -1072,7 +1074,7 @@ class LabeledRangeSlider(QRangeSlider):
 
         click_tolerance_px = 12
         if min_distance <= click_tolerance_px:
-            return self.grid_values[at_position]
+            return at_position
 
         return None
 
@@ -1097,6 +1099,8 @@ class DialogStratify:
     slider: LabeledRangeSlider
     cutoff_combo: QComboBox
 
+    cutoff_position_to_value: Dict[int, str]
+
     def __init__(self, view: View):
         self.view = view
         self.dialog = QDialog(parent=self.view)
@@ -1112,7 +1116,7 @@ class DialogStratify:
         btn_remove.clicked.connect(self.remove_selected_cutoff)
         self.cutoff_combo = QComboBox(parent=self.dialog)
 
-        self.slider.valueChanged.connect(self.update_combo_box)
+        self.slider.valueChanged.connect(self.update_combo_box_from_the_slider)
 
         edit_layout = QHBoxLayout()
         edit_layout.addWidget(btn_add)
@@ -1130,50 +1134,65 @@ class DialogStratify:
         layout.addLayout(edit_layout)
         layout.addWidget(button_box)
 
-        self.update_combo_box()
+        self.update_combo_box_from_the_slider()
 
     def __call__(self, minimum: float, maximum: float) -> Optional[List[float]]:
         self.slider.set_grid_values(minimum, maximum)
         self.slider.set_cutoff_at_midpoint()
-        self.update_combo_box()
+        self.update_combo_box_from_the_slider()
 
         result = self.dialog.exec_()
 
+        ret = None
         if result == QDialog.Accepted:
-            cutoffs = self.slider.get_cutoffs()
-            return [float(c) for c in cutoffs]
-        
-        return None
+            ret = []
+            for position, value in self.slider.get_cutoffs().items():
+                ret.append(float(value))
+        return ret
 
     def add_cutoff(self):
         self.slider.add_cutoff()
-        self.update_combo_box()
+        self.update_combo_box_from_the_slider()
 
     def remove_selected_cutoff(self):
-        cutoff = self.cutoff_combo.currentText()
-        self.slider.remove_cutoff(value=cutoff)
-        self.update_combo_box()
+        current_value = self.cutoff_combo.currentText()
 
-    def on_handle_pressed(self, cutoff: str):
-        idx = self.cutoff_combo.findText(cutoff)
-        if idx >= 0:
+        # use current value to find the position
+        position = None
+        for position, value in self.cutoff_position_to_value.items():
+            if value == current_value:
+                break
+        if position is None:
+            return
+
+        self.slider.remove_cutoff(position=position)
+        self.update_combo_box_from_the_slider()
+
+    def on_handle_pressed(self, position: int):
+        """
+        When the user clicks on a handle, update the combo box to the value of the handle.
+        """
+        value = self.cutoff_position_to_value.get(position, None)
+        if value is None:
+            return
+        idx = self.cutoff_combo.findText(value)
+        if idx != -1:
             self.cutoff_combo.setCurrentIndex(idx)
 
-    def update_combo_box(self):
-        cutoffs = self.slider.get_cutoffs()
+    def update_combo_box_from_the_slider(self):
+        self.cutoff_position_to_value = self.slider.get_cutoffs()
 
-        selected_cutoff = self.cutoff_combo.currentText()
+        current_value = self.cutoff_combo.currentText()
 
         self.cutoff_combo.blockSignals(True)
         self.cutoff_combo.clear()
 
-        for cutoff in cutoffs:
-            self.cutoff_combo.addItem(cutoff)
+        for position, value in self.cutoff_position_to_value.items():
+            self.cutoff_combo.addItem(value)
 
-        if selected_cutoff:
-            idx = self.cutoff_combo.findText(selected_cutoff)
-            if idx >= 0:
-                self.cutoff_combo.setCurrentIndex(idx)
+        idx = self.cutoff_combo.findText(current_value)
+        if idx != -1:
+            self.cutoff_combo.setCurrentIndex(idx)
 
         self.cutoff_combo.blockSignals(False)
 
