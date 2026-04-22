@@ -29,6 +29,6 @@ Yu-Cheng Lin, DDS, MS, PhD (ylin@nycu.edu.tw)'''
 
     model = Model()
     view = View(model=model)
-    Controller(model=model, view=view)
+    _controller = Controller(model=model, view=view)
 
     sys.exit(app_.exec_())

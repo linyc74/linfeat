@@ -17,13 +17,11 @@ class Controller:
         self.__init_actions()
         self.__connect_button_actions()
         self.__connect_short_actions()
-
-        # for testing
-        self.model.open(file='~/Desktop/small.csv')
-        self.view.refresh_table()
+        self.__connect_drag_drop_actions()
 
     def __init_actions(self):
         self.action_open = ActionOpen(self)
+        self.action_open_dropped_file = ActionOpenDroppedFile(self)
         self.action_save_as = ActionSaveAs(self)
         self.action_add_new_row = ActionAddNewRow(self)
         self.action_edit_row = ActionEditRow(self)
@@ -63,6 +61,9 @@ class Controller:
             else:
                 print(f'WARNING: Controller method "action_{name}" does not exist for the shortcut "{name}"')
 
+    def __connect_drag_drop_actions(self):
+        self.view.table.file_dropped.connect(self.action_open_dropped_file)
+
 
 class Action:
 
@@ -91,6 +92,16 @@ class ActionOpen(Action):
             return
         self.model.open(file=file)
         self.view.refresh_table()
+
+
+class ActionOpenDroppedFile(Action):
+
+    def __call__(self, file: str):  # override the parent class, to take the `file` argument
+        try:
+            self.model.open(file=file)
+            self.view.refresh_table()
+        except Exception as e:
+            self.view.message_box_error(msg=repr(e))
 
 
 class ActionSaveAs(Action):

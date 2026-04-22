@@ -1,11 +1,11 @@
 import re
 import pandas as pd
-from os.path import dirname, exists
+from os.path import dirname, exists, expanduser
 from typing import List, Optional, Any, Dict, Tuple
 
 from superqt import QRangeSlider
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QIcon, QKeySequence, QColor, QPainter, QFontMetrics
+from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QObject
+from PyQt5.QtGui import QIcon, QKeySequence, QColor, QPainter, QFontMetrics, QDropEvent
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, \
     QMessageBox, QGridLayout, QDialog, QFormLayout, QDialogButtonBox, QComboBox, QScrollArea, QLineEdit, \
     QShortcut, QAbstractItemView, QHBoxLayout, QListWidget, QListWidgetItem, QToolButton, QFrame, QLabel, \
@@ -18,10 +18,16 @@ from .basic import CONTINUOUS
 class Table(QTableWidget):
 
     model: Model
+    file_dropped = pyqtSignal(str)
 
     def __init__(self, model: Model):
         super().__init__()
         self.model = model
+
+        self.setAcceptDrops(True)
+        self.viewport().installEventFilter(self)
+        self.setDragDropMode(QAbstractItemView.DropOnly)
+        
         self.refresh_table()
 
     def refresh_table(self):
@@ -85,6 +91,50 @@ class Table(QTableWidget):
         columns = [self.horizontalHeaderItem(i).text() for i in range(self.columnCount())]
         ith_col = columns.index(column)
         self.setCurrentCell(ith_row, ith_col)
+
+    def dragEnterEvent(self, event):
+        mime = event.mimeData()
+        if mime is not None and mime.hasUrls():
+            for url in mime.urls():
+                if url.isLocalFile():
+                    event.acceptProposedAction()
+                    return
+        event.ignore()
+
+    def dragMoveEvent(self, event) -> None:
+        mime = event.mimeData()
+        if mime is not None and mime.hasUrls():
+            for url in mime.urls():
+                if url.isLocalFile():
+                    event.acceptProposedAction()
+                    return
+        event.ignore()
+
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        if obj is self.viewport() and event.type() == QEvent.Drop:
+            self._handle_url_drop(event)
+            return True
+        return super().eventFilter(obj, event)
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        self._handle_url_drop(event)
+
+    def _handle_url_drop(self, event: QDropEvent) -> None:
+        mime = event.mimeData()
+        if mime is None or not mime.hasUrls():
+            event.ignore()
+            return
+
+        for url in mime.urls():
+            if not url.isLocalFile():
+                continue
+            path = expanduser(url.toLocalFile())
+            if exists(path):
+                self.file_dropped.emit(path)
+                event.acceptProposedAction()
+                return
+
+        event.ignore()
 
 
 class View(QWidget):
