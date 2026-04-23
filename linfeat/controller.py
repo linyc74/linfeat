@@ -19,6 +19,9 @@ class Controller:
         self.__connect_short_actions()
         self.__connect_drag_drop_actions()
 
+        self.model.open(file='~/Desktop/small.csv')
+        self.view.refresh_table()
+
     def __init_actions(self):
         self.action_open = ActionOpen(self)
         self.action_open_dropped_file = ActionOpenDroppedFile(self)
@@ -29,6 +32,7 @@ class Controller:
         self.action_undo = ActionUndo(self)
         self.action_redo = ActionRedo(self)
         self.action_find = ActionFind(self)
+        self.action_add_new_column = ActionAddNewColumn(self)
         self.action_rename_column = ActionRenameColumn(self)
         self.action_sort_ascending = ActionSortAscending(self)
         self.action_sort_descending = ActionSortDescending(self)
@@ -354,6 +358,16 @@ class ActionStratifyConvert(Action):
             return
         
         self.model.convert(column=column, old_to_new=old_to_new, new_column=new_column)
+        self.view.refresh_table()
+
+
+class ActionAddNewColumn(Action):
+
+    def action(self):
+        column = self.view.dialog_new_column_name(name='New Column')
+        if column is None:
+            return
+        self.model.add_column(column=column)
         self.view.refresh_table()
 
 

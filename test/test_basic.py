@@ -31,8 +31,6 @@ class TestFunctions(TestCase):
             ([True, False, np.nan], 'binary'),
             (['0', '1', np.nan],    'categorical'),
             ([0, 1, 1.1, np.nan],   'continuous'),
+            ([np.nan, np.nan],      'categorical'),
         ]:
             self.assertEqual(determine_variable_type(series), expected)
-
-        with self.assertRaises(ValueError):
-            determine_variable_type([np.nan, None])

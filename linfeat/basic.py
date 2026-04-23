@@ -119,7 +119,8 @@ def determine_variable_type(series: Iterable[Any]) -> str:
     __series = [v for v in series if not pd.isna(v)]
 
     if len(__series) == 0:
-        raise ValueError(f'"{series}" has no valid values to determine variable type')
+        print(f'Warning: No valid values to determine variable type. Default to {CATEGORICAL}.')
+        return CATEGORICAL
 
     type_series = []
 

@@ -263,6 +263,14 @@ class Model:
         self.dataframe = df
         self.column_to_parametric[new_column] = False
 
+    def add_column(self, column: str):
+        assert column not in self.dataframe.columns, f'Column "{column}" already exists'
+        df = self.dataframe.copy()
+        df[column] = pd.Series(data=np.nan, dtype=object)
+        self.__add_to_undo_cache()  # add to undo cache after successful add
+        self.dataframe = df
+        self.column_to_parametric[column] = False
+
     def rename_column(self, column: str, new_name: str):
         if new_name == column:
             return

@@ -145,44 +145,50 @@ class View(QWidget):
     BUTTON_NAME_TO_LABEL = {
         'open': 'Open...',
         'save_as': 'Save As...',
-        'add_new_row': 'Add New Row',
-        'edit_row': 'Edit Row',
-        # 'edit_cell': 'Edit Cell',  # hidden
 
         'undo': 'Undo',
-        'redo': 'Redo',
         'sort_ascending': 'Sort (A to Z)',
+        'delete_selected_rows': 'Delete Selected Samples',
+        'add_new_row': 'Add New Sample',
+        'edit_row': 'Edit Sample',
+        'edit_cell': 'Edit',
+
+        'redo': 'Redo',
         'sort_descending': 'Sort (Z to A)',
-        'delete_selected_rows': 'Delete Selected Rows',
         'delete_selected_columns': 'Delete Selected Columns',
-        # 'find': 'Find',  # hidden
+        'add_new_column': 'Add New Column',
         'rename_column': 'Rename Column',
 
         'stratify_convert': 'Stratify / Convert',
         'set_parametric_variables': 'Set Parametric Variables',
         'univariable_statistics': 'Univariable Statistics',
         'multivariable_regression': 'Multivariable Regression',
+    
+        # 'find': 'Find',  # hidden
     }
     BUTTON_NAME_TO_POSITION = {
         'open': (0, 0),
         'save_as': (1, 0),
-        'add_new_row': (2, 0),
-        'edit_row': (3, 0),
-        'edit_cell': (4, 0),
         
         'undo': (0, 1),
-        'redo': (0, 2),
         'sort_ascending': (1, 1),
-        'sort_descending': (1, 2),
         'delete_selected_rows': (2, 1),
+        'add_new_row': (3, 1),
+        'edit_row': (4, 1),
+        'edit_cell': (5, 1),
+
+        'redo': (0, 2),
+        'sort_descending': (1, 2),
         'delete_selected_columns': (2, 2),
-        'find': (3, 1),
-        'rename_column': (3, 2),
+        'add_new_column': (3, 2),
+        'rename_column': (4, 2),
 
         'stratify_convert': (0, 3),
         'set_parametric_variables': (1, 3),
         'univariable_statistics': (2, 3),
         'multivariable_regression': (3, 3),
+
+        # 'find': (1, 4),
     }
     SHORTCUT_NAME_TO_KEY_SEQUENCE = {
         'control_s': 'Ctrl+S',
