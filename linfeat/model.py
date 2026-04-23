@@ -202,7 +202,7 @@ class Model:
     def update_cell(self, row: int, column: str, value: Any):
         new = self.dataframe.copy()
         if column in self.forced_categorical_columns:
-            new.loc[row, column] = cast_to_categorical(value)  # categorical str
+            new.loc[row, column] = cast_to_categorical(value)
         else:
             new.loc[row, column] = cast_to_appropriate_type(value)
 
@@ -348,7 +348,7 @@ class Model:
     
     def force_categorical(self, column: str):
         df = self.dataframe.copy()
-        series = [cast_to_categorical(v) for v in df[column]]  # cast all to categorical str
+        series = [cast_to_categorical(v) for v in df[column]]
         df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
         self.__add_to_undo_cache()  # add to undo cache after successful force categorical
         self.dataframe = df
@@ -359,11 +359,44 @@ class Model:
         if column not in self.forced_categorical_columns:
             return
         df = self.dataframe.copy()
-        series = [cast_to_appropriate_type(v) for v in df[column]]  # cast all to appropriate type
+        series = [cast_to_appropriate_type(v) for v in df[column]]
         df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
         self.__add_to_undo_cache()  # add to undo cache after successful unforce categorical
         self.dataframe = df
         self.forced_categorical_columns.remove(column)
+    
+    def fill_missing_values(self, binary: str, continuous: str, categorical: str):
+        df = self.dataframe.copy()
+
+        assert binary in ['0', '1'], f'Binary must be 0 or 1. Got "{binary}".'
+        assert (continuous.lower() in ['mean', 'median']) or continuous.isdigit(), f'Continuous must be mean, median, or a numeric value. Got "{continuous}".'
+
+        for column in df.columns:
+            if not df[column].isna().any():
+                continue
+
+            if column in self.forced_categorical_columns:
+                type_ = CATEGORICAL
+            else:
+                type_ = determine_variable_type(df[column])
+            
+            if type_ == BINARY:
+                df.loc[df[column].isna(), column] = int(binary)  # always int
+
+            elif type_ == CONTINUOUS:
+                if continuous.lower() == 'mean':
+                    v = df[column].mean()  # float
+                elif continuous.lower() == 'median':
+                    v = df[column].median()  # float
+                else:
+                    v = float(continuous)
+                df.loc[df[column].isna(), column] = cast_to_appropriate_type(v)  # can be converted to int
+
+            elif type_ == CATEGORICAL:
+                df.loc[df[column].isna(), column] = categorical  # remains str, do not convert to int/float
+
+        self.__add_to_undo_cache()  # add to undo cache after successful fill missing values
+        self.dataframe = df
 
 
 def append(
@@ -381,6 +414,9 @@ def append(
 
 def cast_to_appropriate_type(value: Any) -> Any:
     v = value
+
+    if pd.isna(v):
+        return np.nan
     
     # str to float, if possible
     if isinstance(v, str):
@@ -403,6 +439,14 @@ def cast_to_appropriate_type(value: Any) -> Any:
 
 
 def cast_to_categorical(value: Any) -> Union[str, float]:
-    if pd.isna(value):
-        return np.nan  # even for categorical, missing values in a dataframe should always be np.nan
-    return str(value)
+    v = value
+
+    if pd.isna(v):
+        return np.nan
+
+    if isinstance(v, str):
+        v = v.strip()
+        if v == '':
+            return np.nan
+
+    return str(v)

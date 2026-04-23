@@ -19,9 +19,6 @@ class Controller:
         self.__connect_short_actions()
         self.__connect_drag_drop_actions()
 
-        self.model.open(file='~/Desktop/small.csv')
-        self.view.refresh_table()
-
     def __init_actions(self):
         self.action_open = ActionOpen(self)
         self.action_open_dropped_file = ActionOpenDroppedFile(self)
@@ -48,6 +45,7 @@ class Controller:
         self.action_stratify_convert = ActionStratifyConvert(self)
         self.action_force_categorical = ActionForceCategorical(self)
         self.action_unforce_categorical = ActionUnforceCategorical(self)
+        self.action_fill_missing_values = ActionFillMissingValues(self)
 
     def __connect_button_actions(self):
         for name in self.view.BUTTON_NAME_TO_LABEL.keys():
@@ -418,4 +416,19 @@ class ActionUnforceCategorical(Action):
             return
         column = columns[0]
         self.model.unforce_categorical(column=column)
+        self.view.refresh_table()
+
+
+class ActionFillMissingValues(Action):
+
+    def action(self):
+        defaults = self.view.dialog_fill_missing_values()
+        if defaults is None:
+            return
+        binary, continuous, categorical = defaults
+        self.model.fill_missing_values(
+            binary=binary,
+            continuous=continuous,
+            categorical=categorical
+        )
         self.view.refresh_table()

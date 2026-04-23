@@ -5,7 +5,7 @@ from typing import List, Optional, Any, Dict, Tuple
 
 from superqt import QRangeSlider
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QObject
-from PyQt5.QtGui import QIcon, QKeySequence, QColor, QPainter, QFontMetrics, QDropEvent, QFont
+from PyQt5.QtGui import QIcon, QKeySequence, QColor, QPainter, QFontMetrics, QDropEvent
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, \
     QMessageBox, QGridLayout, QDialog, QFormLayout, QDialogButtonBox, QComboBox, QScrollArea, QLineEdit, \
     QShortcut, QAbstractItemView, QHBoxLayout, QListWidget, QListWidgetItem, QToolButton, QFrame, QLabel, \
@@ -157,6 +157,7 @@ class View(QWidget):
         'add_new_row': 'Add New Sample',
         'edit_row': 'Edit Sample',
         'edit_cell': 'Edit',
+        'fill_missing_values': 'Fill Missing Values',
 
         'redo': 'Redo',
         'sort_descending': 'Sort (Z to A)',
@@ -183,6 +184,7 @@ class View(QWidget):
         'add_new_row': (3, 1),
         'edit_row': (4, 1),
         'edit_cell': (5, 1),
+        'fill_missing_values': (6, 1),
 
         'redo': (0, 2),
         'sort_descending': (1, 2),
@@ -266,6 +268,7 @@ class View(QWidget):
         self.dialog_convert = DialogConvert(self)
         self.dialog_new_column_name = DialogNewColumnName(self)
         self.dialog_rename_column = DialogRenameColumn(self)
+        self.dialog_fill_missing_values = DialogFillMissingValues(self)
     
     def refresh_table(self):
         self.table.refresh_table()
@@ -1364,6 +1367,25 @@ class DialogRenameColumn(DialogLineEdits):
         self.line_edits[0].setText(name)
         if self.dialog.exec_() == QDialog.Accepted:
             return self.line_edits[0].text()
+        return None
+
+
+class DialogFillMissingValues(DialogLineEdits):
+
+    LINE_TITLES = [
+        'Binary:',
+        'Continuous:',
+        'Categorical:',
+    ]
+    LINE_DEFAULTS = [
+        '0',
+        'mean',
+        'NA',
+    ]
+
+    def __call__(self) -> Optional[Tuple[str, str, str]]:
+        if self.dialog.exec_() == QDialog.Accepted:
+            return self.line_edits[0].text(), self.line_edits[1].text(), self.line_edits[2].text()
         return None
 
 
