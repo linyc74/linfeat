@@ -424,6 +424,8 @@ def cast_to_appropriate_type(value: Any) -> Any:
         
         if v == '':
             v = np.nan  # np.nan is float
+        elif v.lower() == 'nan':
+            v = 'nan'  # avoid converting to np.nan, keep as str because the user may want to show it as is
         else:
             try:
                 v = float(v)
