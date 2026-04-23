@@ -2,7 +2,7 @@ import os
 import datetime
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Dict, Any, Union, Tuple, Type
+from typing import List, Optional, Dict, Any, Union, Tuple, Type, Set
 from .univariable import UnivariableStatistics
 from .multivariable import MultivariableRegression
 from .basic import determine_variable_type, BINARY, CATEGORICAL, CONTINUOUS
@@ -13,11 +13,18 @@ class DataPacket:
     df: pd.DataFrame
     column_to_type: Dict[str, str]
     column_to_parametric: Dict[str, bool]
+    forced_categorical_columns: Set[str]
 
-    def __init__(self, df: pd.DataFrame, column_to_type: Dict[str, str], column_to_parametric: Dict[str, bool]):
+    def __init__(
+            self,
+            df: pd.DataFrame,
+            column_to_type: Dict[str, str],
+            column_to_parametric: Dict[str, bool],
+            forced_categorical_columns: Set[str]):
         self.df = df
         self.column_to_type = column_to_type
         self.column_to_parametric = column_to_parametric
+        self.forced_categorical_columns = forced_categorical_columns
 
 
 class Model:
@@ -25,6 +32,7 @@ class Model:
     MAX_UNDO = 100
 
     dataframe: pd.DataFrame
+    forced_categorical_columns: Set[str]
     column_to_parametric: Dict[str, bool]
     active_file: Optional[str]
 
@@ -34,6 +42,7 @@ class Model:
     def __init__(self):
         self.dataframe = pd.DataFrame()
         self.column_to_parametric = {}
+        self.forced_categorical_columns = set()
         self.active_file = None
         self.undo_cache = []
         self.redo_cache = []
@@ -67,9 +76,15 @@ class Model:
         self.active_file = file
 
         matrix = df.to_numpy(dtype=object, copy=True)
+        columns = df.columns.tolist()
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
-                matrix[i, j] = cast_to_appropriate_type(matrix[i, j])
+                column = columns[j]
+                value = matrix[i, j]
+                if column in self.forced_categorical_columns:
+                    matrix[i, j] = cast_to_categorical(value)  # categorical str
+                else:
+                    matrix[i, j] = cast_to_appropriate_type(value)
         df = pd.DataFrame(matrix, index=df.index, columns=df.columns, dtype=object)
 
         self.__add_to_undo_cache()
@@ -90,7 +105,8 @@ class Model:
         df = self.dataframe.copy()
         column_to_type = {c: determine_variable_type(df[c]) for c in df.columns}
         column_to_parametric = self.column_to_parametric.copy()
-        return DataPacket(df, column_to_type, column_to_parametric)
+        forced_categorical_columns = self.forced_categorical_columns.copy()
+        return DataPacket(df, column_to_type, column_to_parametric, forced_categorical_columns)
 
     def sort_dataframe(
             self,
@@ -160,19 +176,24 @@ class Model:
     def update_row(self, row: int, attributes: Dict[str, str]):
         new = self.dataframe.copy()
         for key, value in attributes.items():
-            if key in new.columns:
-                new.loc[row, key] = cast_to_appropriate_type(value)
-            else:
+            if key not in new.columns:
                 raise ValueError(f'Column "{key}" not found in dataframe')
+            if key in self.forced_categorical_columns:
+                new.loc[row, key] = cast_to_categorical(value)  # categorical str
+            else:
+                new.loc[row, key] = cast_to_appropriate_type(value)
 
         self.__add_to_undo_cache()  # add to undo cache after successful update
         self.dataframe = new
 
     def append_row(self, attributes: Dict[str, str]):
-        series = pd.Series({
-            key: cast_to_appropriate_type(value)
-            for key, value in attributes.items()
-        })
+        series = []
+        for key, value in attributes.items():
+            if key in self.forced_categorical_columns:
+                series.append(cast_to_categorical(value))  # categorical str
+            else:
+                series.append(cast_to_appropriate_type(value))
+        series = pd.Series(data=series, dtype=object)
         new = append(self.dataframe, series)
 
         self.__add_to_undo_cache()  # add to undo cache after successful append
@@ -180,7 +201,10 @@ class Model:
 
     def update_cell(self, row: int, column: str, value: Any):
         new = self.dataframe.copy()
-        new.loc[row, column] = cast_to_appropriate_type(value)
+        if column in self.forced_categorical_columns:
+            new.loc[row, column] = cast_to_categorical(value)  # categorical str
+        else:
+            new.loc[row, column] = cast_to_appropriate_type(value)
 
         self.__add_to_undo_cache()  # add to undo cache after successful update
         self.dataframe = new
@@ -321,6 +345,25 @@ class Model:
             outcome=outcome,
             outdir=outdir,
         )
+    
+    def force_categorical(self, column: str):
+        df = self.dataframe.copy()
+        series = [cast_to_categorical(v) for v in df[column]]  # cast all to categorical str
+        df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
+        self.__add_to_undo_cache()  # add to undo cache after successful force categorical
+        self.dataframe = df
+        self.forced_categorical_columns.add(column)
+        self.column_to_parametric[column] = False
+
+    def unforce_categorical(self, column: str):
+        if column not in self.forced_categorical_columns:
+            return
+        df = self.dataframe.copy()
+        series = [cast_to_appropriate_type(v) for v in df[column]]  # cast all to appropriate type
+        df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
+        self.__add_to_undo_cache()  # add to undo cache after successful unforce categorical
+        self.dataframe = df
+        self.forced_categorical_columns.remove(column)
 
 
 def append(
@@ -357,3 +400,9 @@ def cast_to_appropriate_type(value: Any) -> Any:
             v = int(v)
 
     return v
+
+
+def cast_to_categorical(value: Any) -> Union[str, float]:
+    if pd.isna(value):
+        return np.nan  # even for categorical, missing values in a dataframe should always be np.nan
+    return str(value)

@@ -5,7 +5,7 @@ from typing import List, Optional, Any, Dict, Tuple
 
 from superqt import QRangeSlider
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QObject
-from PyQt5.QtGui import QIcon, QKeySequence, QColor, QPainter, QFontMetrics, QDropEvent
+from PyQt5.QtGui import QIcon, QKeySequence, QColor, QPainter, QFontMetrics, QDropEvent, QFont
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QPushButton, QFileDialog, \
     QMessageBox, QGridLayout, QDialog, QFormLayout, QDialogButtonBox, QComboBox, QScrollArea, QLineEdit, \
     QShortcut, QAbstractItemView, QHBoxLayout, QListWidget, QListWidgetItem, QToolButton, QFrame, QLabel, \
@@ -35,6 +35,7 @@ class Table(QTableWidget):
         df = packet.df
         column_to_type = packet.column_to_type
         column_to_parametric = packet.column_to_parametric
+        forced_categorical_columns = packet.forced_categorical_columns
 
         self.setRowCount(len(df.index))
         self.setColumnCount(len(df.columns))
@@ -42,6 +43,10 @@ class Table(QTableWidget):
         # render columns
         for i, column in enumerate(df.columns):
             item = QTableWidgetItem(column)
+            if column in forced_categorical_columns:
+                font = item.font()
+                font.setBold(True)
+                item.setFont(font)
             variable_type = column_to_type[column]
             icon_path = f'icon/{variable_type}.png'
             item.setIcon(QIcon(icon_path))
@@ -158,6 +163,8 @@ class View(QWidget):
         'delete_selected_columns': 'Delete Selected Columns',
         'add_new_column': 'Add New Column',
         'rename_column': 'Rename Column',
+        'force_categorical': 'Set as Categorical',
+        'unforce_categorical': 'Unset Categorical',
 
         'stratify_convert': 'Stratify / Convert',
         'set_parametric_variables': 'Set Parametric Variables',
@@ -182,6 +189,8 @@ class View(QWidget):
         'delete_selected_columns': (2, 2),
         'add_new_column': (3, 2),
         'rename_column': (4, 2),
+        'force_categorical': (5, 2),
+        'unforce_categorical': (6, 2),
 
         'stratify_convert': (0, 3),
         'set_parametric_variables': (1, 3),

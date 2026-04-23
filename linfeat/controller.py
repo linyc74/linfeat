@@ -46,6 +46,8 @@ class Controller:
         self.action_univariable_statistics = ActionUnivariableStatistics(self)
         self.action_multivariable_regression = ActionMultivariableRegression(self)
         self.action_stratify_convert = ActionStratifyConvert(self)
+        self.action_force_categorical = ActionForceCategorical(self)
+        self.action_unforce_categorical = ActionUnforceCategorical(self)
 
     def __connect_button_actions(self):
         for name in self.view.BUTTON_NAME_TO_LABEL.keys():
@@ -386,4 +388,34 @@ class ActionRenameColumn(Action):
         if new_name is None:
             return
         self.model.rename_column(column=column, new_name=new_name)
+        self.view.refresh_table()
+
+
+class ActionForceCategorical(Action):
+
+    def action(self):
+        columns = self.view.get_selected_columns()
+        if len(columns) == 0:
+            self.view.message_box_error(msg='Please select a column')
+            return
+        elif len(columns) > 1:
+            self.view.message_box_error(msg='Please select only one column')
+            return
+        column = columns[0]
+        self.model.force_categorical(column=column)
+        self.view.refresh_table()
+
+
+class ActionUnforceCategorical(Action):
+
+    def action(self):
+        columns = self.view.get_selected_columns()
+        if len(columns) == 0:
+            self.view.message_box_error(msg='Please select a column')
+            return
+        elif len(columns) > 1:
+            self.view.message_box_error(msg='Please select only one column')
+            return
+        column = columns[0]
+        self.model.unforce_categorical(column=column)
         self.view.refresh_table()
