@@ -1,8 +1,8 @@
 import re
+import sys
 import pandas as pd
-from os.path import dirname, exists, expanduser
 from typing import List, Optional, Any, Dict, Tuple
-
+from os.path import dirname, exists, expanduser, normpath, join
 from superqt import QRangeSlider
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QObject
 from PyQt5.QtGui import QIcon, QKeySequence, QColor, QPainter, QFontMetrics, QDropEvent
@@ -13,6 +13,38 @@ from PyQt5.QtWidgets import QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem
 
 from .model import Model
 from .basic import CONTINUOUS
+
+
+def resource_path(*parts: str) -> str:
+    """Return an absolute path to a packaged resource.
+
+    Args:
+        *parts: Path components under the resource root (e.g. ``('icon', 'logo.ico')``).
+
+    Returns:
+        Absolute filesystem path to the requested resource.
+
+    Notes:
+        - For Windows PyInstaller ``--onedir`` distributions, resources are expected to live next
+          to the executable, e.g. ``<dist_dir>/icon/...``.
+        - For macOS py2app bundles, resources live at
+          ``<App>.app/Contents/Resources/...``.
+        - For development runs, resources are expected to live in the repository root,
+          e.g. ``<repo_root>/icon/...``.
+    """
+    if getattr(sys, 'frozen', False):
+        exe_dir = dirname(sys.executable)
+
+        # py2app: sys.executable is inside <App>.app/Contents/MacOS/
+        # resources are located in <App>.app/Contents/Resources/
+        if sys.platform == 'darwin':
+            root_dir = normpath(join(exe_dir, '..', 'Resources'))
+        else:
+            root_dir = join(exe_dir, '_internal')
+    else:
+        # resources.py lives in <repo_root>/linfeat/resources.py
+        root_dir = dirname(dirname(__file__))
+    return join(root_dir, *parts)
 
 
 class Table(QTableWidget):
@@ -48,8 +80,8 @@ class Table(QTableWidget):
                 font.setBold(True)
                 item.setFont(font)
             variable_type = column_to_type[column]
-            icon_path = f'icon/{variable_type}.png'
-            item.setIcon(QIcon(icon_path))
+            icon_file = resource_path('icon', f'{variable_type}.png')
+            item.setIcon(QIcon(icon_file))
             item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             self.setHorizontalHeaderItem(i, item)
 
@@ -145,7 +177,6 @@ class Table(QTableWidget):
 class View(QWidget):
 
     TITLE = 'LinFeat'
-    ICON_FILE = 'icon/logo.ico'
     WIDTH, HEIGHT = 1280, 768
     BUTTON_NAME_TO_LABEL = {
         'open': 'Open...',
@@ -222,7 +253,8 @@ class View(QWidget):
         self.model = model
 
         self.setWindowTitle(f'{self.TITLE}')
-        self.setWindowIcon(QIcon(f'{dirname(dirname(__file__))}/{self.ICON_FILE}'))
+        icon_file = resource_path('icon', 'logo.ico')
+        self.setWindowIcon(QIcon(icon_file))
         self.resize(self.WIDTH, self.HEIGHT)
 
         self.__init__vertical_layout()

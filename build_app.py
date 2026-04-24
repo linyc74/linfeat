@@ -116,19 +116,21 @@ setup(
 
         subprocess.check_call(f'zip -r {f}.zip {f}.app', shell=True)
 
-        for dir_ in ['build', 'dist']:
+        for dir_ in ['build', 'dist', f'{f}.app']:
             shutil.rmtree(dir_)
         for file in [self.entrypoint_py, 'setup.py']:
             os.remove(file)
 
     def build_windows_exe(self):
-        cmd = f'pyinstaller --clean --onefile --icon="icon/logo.ico" --add-data="icon;icon" {self.entrypoint_py}'
+        cmd = f'pyinstaller --clean --onedir --icon="icon/logo.ico" --add-data="icon;icon" {self.entrypoint_py}'
         subprocess.check_call(cmd, shell=True)
 
         f = self.entrypoint_py[:-3]
-        os.rename(f'./dist/{f}.exe', f'./{f}.exe')
+        os.rename(f'./dist/{f}', f'./{f}')
 
-        for dir_ in ['build', 'dist']:
+        shutil.make_archive(f, 'zip', root_dir='.', base_dir=f)
+
+        for dir_ in ['build', 'dist', f]:
             shutil.rmtree(dir_)
         for file in [self.entrypoint_py, f'{f}.spec']:
             os.remove(file)
@@ -136,5 +138,3 @@ setup(
 
 if __name__ == '__main__':
     EntryPoint().main()
-
-
