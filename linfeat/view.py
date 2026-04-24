@@ -311,9 +311,12 @@ class FileDialogOpenTable(FileDialog):
         d.selectNameFilter('Excel Files (*.xlsx)')
         d.setOptions(QFileDialog.DontUseNativeDialog)
         d.setFileMode(QFileDialog.ExistingFile)  # only one existing file can be selected
-        d.exec_()
-        selected = d.selectedFiles()
-        return selected[0] if len(selected) > 0 else ''
+        response = d.exec_()
+        if response == QFileDialog.Accepted:
+            selected = d.selectedFiles()
+            if len(selected) > 0:
+                return selected[0]
+        return ''
 
 
 class FileDialogSaveTable(FileDialog):
