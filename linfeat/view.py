@@ -152,15 +152,16 @@ class View(QWidget):
         'save_as': 'Save As...',
 
         'undo': 'Undo',
+        'redo': 'Redo',
         'sort_ascending': 'Sort (A to Z)',
+        'sort_descending': 'Sort (Z to A)',
+
         'delete_selected_rows': 'Delete Selected Samples',
         'add_new_row': 'Add New Sample',
         'edit_row': 'Edit Sample',
         'edit_cell': 'Edit',
         'fill_missing_values': 'Fill Missing Values',
-
-        'redo': 'Redo',
-        'sort_descending': 'Sort (Z to A)',
+        
         'delete_selected_columns': 'Delete Selected Columns',
         'add_new_column': 'Add New Column',
         'rename_column': 'Rename Column',
@@ -179,27 +180,28 @@ class View(QWidget):
         'save_as': (1, 0),
         
         'undo': (0, 1),
-        'sort_ascending': (1, 1),
-        'delete_selected_rows': (2, 1),
-        'add_new_row': (3, 1),
-        'edit_row': (4, 1),
-        'edit_cell': (5, 1),
-        'fill_missing_values': (6, 1),
+        'redo': (1, 1),
+        'sort_ascending': (2, 1),
+        'sort_descending': (3, 1),
 
-        'redo': (0, 2),
-        'sort_descending': (1, 2),
-        'delete_selected_columns': (2, 2),
-        'add_new_column': (3, 2),
-        'rename_column': (4, 2),
-        'force_categorical': (5, 2),
-        'unforce_categorical': (6, 2),
+        'delete_selected_rows': (0, 2),
+        'add_new_row': (1, 2),
+        'edit_row': (2, 2),
+        'edit_cell': (3, 2),
+        'fill_missing_values': (4, 2),
 
-        'stratify_convert': (0, 3),
-        'set_parametric_variables': (1, 3),
-        'univariable_statistics': (2, 3),
-        'multivariable_regression': (3, 3),
+        'delete_selected_columns': (0, 3),
+        'add_new_column': (1, 3),
+        'rename_column': (2, 3),
+        'force_categorical': (3, 3),
+        'unforce_categorical': (4, 3),
 
-        # 'find': (1, 4),
+        'stratify_convert': (0, 4),
+        'set_parametric_variables': (1, 4),
+        'univariable_statistics': (2, 4),
+        'multivariable_regression': (3, 4),
+
+        # 'find': (0, 5),
     }
     SHORTCUT_NAME_TO_KEY_SEQUENCE = {
         'control_s': 'Ctrl+S',
