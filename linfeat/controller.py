@@ -46,6 +46,7 @@ class Controller:
         self.action_force_categorical = ActionForceCategorical(self)
         self.action_unforce_categorical = ActionUnforceCategorical(self)
         self.action_fill_missing_values = ActionFillMissingValues(self)
+        self.action_normality_test = ActionNormalityTest(self)
 
     def __connect_button_actions(self):
         for name in self.view.BUTTON_NAME_TO_LABEL.keys():
@@ -433,3 +434,9 @@ class ActionFillMissingValues(Action):
             categorical=categorical
         )
         self.view.refresh_table()
+
+
+class ActionNormalityTest(Action):
+
+    def action(self):
+        self.view.message_box_info(msg='Normality test is being developed. Thank you for your patience. 😊')

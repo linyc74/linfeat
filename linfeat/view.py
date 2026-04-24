@@ -170,6 +170,7 @@ class View(QWidget):
 
         'stratify_convert': 'Stratify / Convert',
         'set_parametric_variables': 'Set Parametric Variables',
+        'normality_test': 'Normality Test',
         'univariable_statistics': 'Univariable Statistics',
         'multivariable_regression': 'Multivariable Regression',
     
@@ -198,8 +199,9 @@ class View(QWidget):
 
         'stratify_convert': (0, 4),
         'set_parametric_variables': (1, 4),
-        'univariable_statistics': (2, 4),
-        'multivariable_regression': (3, 4),
+        'normality_test': (2, 4),
+        'univariable_statistics': (3, 4),
+        'multivariable_regression': (4, 4),
 
         # 'find': (0, 5),
     }
@@ -1375,22 +1377,62 @@ class DialogRenameColumn(DialogLineEdits):
         return None
 
 
-class DialogFillMissingValues(DialogLineEdits):
+class DialogFillMissingValues:
 
-    LINE_TITLES = [
-        'Binary:',
-        'Continuous:',
-        'Categorical:',
-    ]
-    LINE_DEFAULTS = [
-        '0',
-        'mean',
-        'NA',
-    ]
+    BINARY_OPTIONS: List[str] = ['0', '1']
+    CONTINUOUS_OPTIONS: List[str] = ['mean', 'median']
+    CATEGORICAL_OPTIONS: List[str] = ['NA']
+
+    view: View
+
+    dialog: QDialog
+    layout: QFormLayout
+    combo_binary: QComboBox
+    combo_continuous: QComboBox
+    combo_categorical: QComboBox
+    button_box: QDialogButtonBox
+
+    def __init__(self, view: View):
+        self.view = view
+
+        self.dialog = QDialog(parent=self.view)
+        self.dialog.setWindowTitle(' ')
+        self.layout = QFormLayout(parent=self.dialog)
+
+        self.combo_binary = QComboBox(parent=self.dialog)
+        self.combo_binary.addItems(self.BINARY_OPTIONS)
+        self.combo_binary.setEditable(False)  # values other than 0 or 1 are not allowed for binary variables
+        self.combo_binary.setCurrentText(self.BINARY_OPTIONS[0])
+
+        self.combo_continuous = QComboBox(parent=self.dialog)
+        self.combo_continuous.addItems(self.CONTINUOUS_OPTIONS)
+        self.combo_continuous.setEditable(True)  # user can input any numeric value for continuous variables
+        self.combo_continuous.setCurrentText(self.CONTINUOUS_OPTIONS[0])
+
+        self.combo_categorical = QComboBox(parent=self.dialog)
+        self.combo_categorical.addItems(self.CATEGORICAL_OPTIONS)
+        self.combo_categorical.setEditable(True)  # user can input any value (as string) for categorical variables
+        self.combo_categorical.setCurrentText(self.CATEGORICAL_OPTIONS[0])
+
+        self.layout.addRow('Binary:', self.combo_binary)
+        self.layout.addRow('Continuous:', self.combo_continuous)
+        self.layout.addRow('Categorical:', self.combo_categorical)
+
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            parent=self.dialog,
+        )
+        self.button_box.accepted.connect(self.dialog.accept)
+        self.button_box.rejected.connect(self.dialog.reject)
+        self.layout.addWidget(self.button_box)
 
     def __call__(self) -> Optional[Tuple[str, str, str]]:
         if self.dialog.exec_() == QDialog.Accepted:
-            return self.line_edits[0].text(), self.line_edits[1].text(), self.line_edits[2].text()
+            return (
+                self.combo_binary.currentText(),
+                self.combo_continuous.currentText(),
+                self.combo_categorical.currentText(),
+            )
         return None
 
 
