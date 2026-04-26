@@ -629,10 +629,6 @@ class ScatterPlot:
         plt.close()
 
 
-def contains_chinese(s: str) -> bool:
-    return any('\u4e00' <= ch <= '\u9fff' for ch in s)
-
-
 def get_colors(colors: str | List[str|Tuple[float, float, float, float]]) -> List[Tuple[float, float, float, float]]:
 
     if isinstance(colors, str):  # is a colormap name
