@@ -682,9 +682,13 @@ class DialogSetParametricVariables:
             return None
 
     def render_table(self):
+        while self.table.rowCount() > 0:
+            self.table.removeRow(0)
+
         packet = self.view.model.get_data_packet()
         variable_to_type = packet.column_to_type
         variable_to_parametric = packet.column_to_parametric
+        forced_categorical_variables = packet.forced_categorical_columns
 
         self.table.setRowCount(len(variable_to_parametric))
 
@@ -699,7 +703,7 @@ class DialogSetParametricVariables:
             current_value = 'Parametric' if parametric else 'Nonparametric'
             combo.setCurrentText(current_value)
 
-            if not variable_to_type[variable] == CONTINUOUS:
+            if (not variable_to_type[variable] == CONTINUOUS) or (variable in forced_categorical_variables):
                 combo.setEnabled(False)
                 combo.setCurrentText('Nonparametric')
 

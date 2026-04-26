@@ -269,8 +269,7 @@ class ActionSetParametricVariables(Action):
         variable_to_parametric = self.view.dialog_set_parametric_variables()
         if variable_to_parametric is None:
             return
-        for variable, parametric in variable_to_parametric.items():
-            self.model.set_column_parametric(column=variable, parametric=parametric)
+        self.model.set_parametric_properties(column_to_parametric=variable_to_parametric)
 
 
 class ActionUnivariableStatistics(Action):
@@ -396,13 +395,9 @@ class ActionForceCategorical(Action):
     def action(self):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
-            self.view.message_box_error(msg='Please select a column')
+            self.view.message_box_error(msg='Please select columns')
             return
-        elif len(columns) > 1:
-            self.view.message_box_error(msg='Please select only one column')
-            return
-        column = columns[0]
-        self.model.force_categorical(column=column)
+        self.model.force_categorical(columns=columns)
         self.view.refresh_table()
 
 
@@ -411,13 +406,9 @@ class ActionUnforceCategorical(Action):
     def action(self):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
-            self.view.message_box_error(msg='Please select a column')
+            self.view.message_box_error(msg='Please select columns')
             return
-        elif len(columns) > 1:
-            self.view.message_box_error(msg='Please select only one column')
-            return
-        column = columns[0]
-        self.model.unforce_categorical(column=column)
+        self.model.unforce_categorical(columns=columns)
         self.view.refresh_table()
 
 

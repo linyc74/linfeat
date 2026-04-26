@@ -90,6 +90,7 @@ class Model:
         self.__add_to_undo_cache()
         self.dataframe = df
         self.column_to_parametric = {column: False for column in df.columns}
+        self.forced_categorical_columns = set()
 
     def save(self, file: str):
         if file.endswith('.xlsx'):
@@ -226,8 +227,19 @@ class Model:
                 if text.lower() in str(self.dataframe.iloc[r, c]).lower():
                     return r, self.dataframe.columns[c]
 
-    def set_column_parametric(self, column: str, parametric: bool):
-        self.column_to_parametric[column] = parametric
+    def set_parametric_properties(self, column_to_parametric: Dict[str, bool]):
+        for c, parametric in column_to_parametric.items():
+            if c in self.forced_categorical_columns:
+                # this is a forced categorical variable
+                # do not change its parametric property which might be already set by the user
+                continue
+            elif determine_variable_type(self.dataframe[c]) == CONTINUOUS:
+                # only continous variable can be defined as parametric or nonparametric
+                self.column_to_parametric[c] = parametric
+            else:
+                # categorical or binary variable can only be nonparametric
+                # do not change its parametric property
+                continue
 
     def stratify(
             self,
@@ -346,25 +358,44 @@ class Model:
             outdir=outdir,
         )
     
-    def force_categorical(self, column: str):
+    def force_categorical(self, columns: List[str]):
         df = self.dataframe.copy()
-        series = [cast_to_categorical(v) for v in df[column]]
-        df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
+        
+        df_changed = False
+        for column in columns:
+            if column in self.forced_categorical_columns:
+                continue
+            df_changed = True
+            series = [cast_to_categorical(v) for v in df[column]]
+            df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
+
+        if not df_changed:
+            return
+
         self.__add_to_undo_cache()  # add to undo cache after successful force categorical
         self.dataframe = df
-        self.forced_categorical_columns.add(column)
-        self.column_to_parametric[column] = False
+        for column in columns:
+            self.forced_categorical_columns.add(column)
 
-    def unforce_categorical(self, column: str):
-        if column not in self.forced_categorical_columns:
-            return
+    def unforce_categorical(self, columns: List[str]):
         df = self.dataframe.copy()
-        series = [cast_to_appropriate_type(v) for v in df[column]]
-        df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
+
+        df_changed = False
+        for column in columns:
+            if column not in self.forced_categorical_columns:
+                continue
+            df_changed = True
+            series = [cast_to_appropriate_type(v) for v in df[column]]
+            df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
+
+        if not df_changed:
+            return
+
         self.__add_to_undo_cache()  # add to undo cache after successful unforce categorical
         self.dataframe = df
-        self.forced_categorical_columns.remove(column)
-    
+        for column in columns:
+            self.forced_categorical_columns.remove(column)
+
     def fill_missing_values(self, binary: str, continuous: str, categorical: str):
         df = self.dataframe.copy()
 
