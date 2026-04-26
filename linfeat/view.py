@@ -79,8 +79,11 @@ class Table(QTableWidget):
                 font = item.font()
                 font.setBold(True)
                 item.setFont(font)
-            variable_type = column_to_type[column]
-            icon_file = resource_path('icon', f'{variable_type}.png')
+                png = 'forced_categorical.png'
+            else:
+                variable_type = column_to_type[column]
+                png = f'{variable_type}.png'
+            icon_file = resource_path('icon', png)
             item.setIcon(QIcon(icon_file))
             item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             self.setHorizontalHeaderItem(i, item)
