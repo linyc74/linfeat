@@ -83,7 +83,7 @@ class Action:
         try:
             self.action()
         except Exception as e:
-            self.view.message_box_error(msg=repr(e))
+            self.view.error_message(msg=repr(e))
         
     def action(self) -> None:
         raise NotImplementedError('Action method not implemented')
@@ -92,7 +92,7 @@ class Action:
 class ActionOpen(Action):
 
     def action(self):
-        file = self.view.file_dialog_open_table()
+        file = self.view.open_file_dialog()
         print(file)
         if file == '':
             return
@@ -107,13 +107,13 @@ class ActionOpenDroppedFile(Action):
             self.model.open(file=file)
             self.view.refresh_table()
         except Exception as e:
-            self.view.message_box_error(msg=repr(e))
+            self.view.error_message(msg=repr(e))
 
 
 class ActionSaveAs(Action):
 
     def action(self):
-        file = self.view.file_dialog_save_table(filename='New Table.xlsx')
+        file = self.view.save_as_file_dialog(filename='New Table.xlsx')
         if file == '':
             return
         self.model.save(file=file)
@@ -122,7 +122,7 @@ class ActionSaveAs(Action):
 class ActionFind(Action):
 
     def action(self):
-        text = self.view.dialog_find()
+        text = self.view.find_dialog()
         if text is None:
             return
 
@@ -132,7 +132,7 @@ class ActionFind(Action):
         found_cell = self.model.find(text=text, start=start)
 
         if found_cell is None:
-            self.view.message_box_info(msg='Couldn\'t find what you were looking for')
+            self.view.info_message(msg='Couldn\'t find what you were looking for')
             return
 
         index, column = found_cell
@@ -146,12 +146,12 @@ class ActionSort(Action):
     def action(self):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
-            self.view.message_box_error(msg='Please select a column')
+            self.view.error_message(msg='Please select a column')
         elif len(columns) == 1:
             self.model.sort_dataframe(by=columns[0], ascending=self.ASCENDING)
             self.view.refresh_table()
         else:
-            self.view.message_box_error(msg='Please select only one column')
+            self.view.error_message(msg='Please select only one column')
 
 
 class ActionSortAscending(ActionSort):
@@ -170,7 +170,7 @@ class ActionDeleteSelectedRows(Action):
         rows = self.view.get_selected_rows()
         if len(rows) == 0:
             return
-        if self.view.message_box_yes_no(msg='Are you sure you want to delete the selected rows?'):
+        if self.view.yes_no_message(msg='Are you sure you want to delete the selected rows?'):
             self.model.drop(rows=rows)
             self.view.refresh_table()
 
@@ -181,7 +181,7 @@ class ActionDeleteSelectedColumns(Action):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
             return
-        if self.view.message_box_yes_no(msg='Are you sure you want to delete the selected columns?'):
+        if self.view.yes_no_message(msg='Are you sure you want to delete the selected columns?'):
             self.model.drop(columns=columns)
             self.view.refresh_table()
 
@@ -189,7 +189,7 @@ class ActionDeleteSelectedColumns(Action):
 class ActionAddNewRow(Action):
 
     def action(self):
-        attributes = self.view.dialog_edit_row(attributes=None)
+        attributes = self.view.edit_row_dialog(attributes=None)
         if attributes is None:
             return
         
@@ -207,17 +207,17 @@ class ActionEditRow(Action):
         rows = self.view.get_selected_rows()
 
         if len(rows) == 0:
-            self.view.message_box_error(msg='Please select a row')
+            self.view.error_message(msg='Please select a row')
             return
         elif len(rows) > 1:
-            self.view.message_box_error(msg='Please select only one row')
+            self.view.error_message(msg='Please select only one row')
             return
 
         row = rows[0]  # only one row is selected
 
         attributes = self.model.get_row(row=row)
 
-        attributes = self.view.dialog_edit_row(attributes=attributes)
+        attributes = self.view.edit_row_dialog(attributes=attributes)
         if attributes is None:
             return
         self.model.update_row(row=row, attributes=attributes)
@@ -231,16 +231,16 @@ class ActionEditCell(Action):
         cells = self.view.get_selected_cells()
 
         if len(cells) == 0:
-            self.view.message_box_error('Please select a cell')
+            self.view.error_message('Please select a cell')
             return
         elif len(cells) > 1:
-            self.view.message_box_error('Please select only one cell')
+            self.view.error_message('Please select only one cell')
             return
 
         row, column = cells[0]
         value = self.model.get_value(row=row, column=column)
 
-        new_value = self.view.dialog_edit_cell(value=value)
+        new_value = self.view.edit_cell_dialog(value=value)
 
         if new_value is None:
             return
@@ -266,7 +266,7 @@ class ActionRedo(Action):
 class ActionSetParametricVariables(Action):
 
     def action(self):
-        variable_to_parametric = self.view.dialog_set_parametric_variables()
+        variable_to_parametric = self.view.set_parametric_variables_dialog()
         if variable_to_parametric is None:
             return
         self.model.set_parametric_properties(column_to_parametric=variable_to_parametric)
@@ -275,30 +275,30 @@ class ActionSetParametricVariables(Action):
 class ActionUnivariableStatistics(Action):
 
     def action(self):
-        outdir = self.view.file_dialog_open_directory(caption='Select Output Directory')
+        outdir = self.view.open_directory_dialog(caption='Select Output Directory')
         if outdir == '':
             return
-        outcome = self.view.dialog_select_outcome()
+        outcome = self.view.select_outcome_dialog()
         if outcome is None:
             return
-        colors = self.view.dialog_colors()
+        colors = self.view.color_dialog()
         if colors is None:
             return
         self.model.univariable_statistics(outdir=outdir, outcome=outcome, colors=colors)
-        self.view.message_box_info(msg='Univariable statistics completed')
+        self.view.info_message(msg='Univariable statistics completed')
 
 
 class ActionMultivariableRegression(Action):
 
     def action(self):
-        outdir = self.view.file_dialog_open_directory(caption='Select Output Directory')
+        outdir = self.view.open_directory_dialog(caption='Select Output Directory')
         if outdir == '':
             return
-        outcome = self.view.dialog_select_outcome()
+        outcome = self.view.select_outcome_dialog()
         if outcome is None:
             return
         self.model.multivariable_regression(outdir=outdir, outcome=outcome)
-        self.view.message_box_info(msg='Multivariable regression completed')
+        self.view.info_message(msg='Multivariable regression completed')
 
 
 class ActionStratifyConvert(Action):
@@ -306,10 +306,10 @@ class ActionStratifyConvert(Action):
     def action(self):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
-            self.view.message_box_error(msg='Please select a column')
+            self.view.error_message(msg='Please select a column')
             return
         elif len(columns) > 1:
-            self.view.message_box_error(msg='Please select only one column')
+            self.view.error_message(msg='Please select only one column')
             return
         column = columns[0]
 
@@ -321,7 +321,7 @@ class ActionStratifyConvert(Action):
             self.convert_categorical_variable(df=df, column=column)
 
     def stratify_continous_variable(self, df: pd.DataFrame, column: str):
-        cutoffs = self.view.dialog_stratify(minimum=df[column].min(), maximum=df[column].max())
+        cutoffs = self.view.stratify_dialog(minimum=df[column].min(), maximum=df[column].max())
         if cutoffs is None:
             return
 
@@ -334,13 +334,13 @@ class ActionStratifyConvert(Action):
             intervals.append((a, b))
             old_to_new[f'{a} - {b}'] = i + 1
 
-        old_to_new = self.view.dialog_convert(old_to_new=old_to_new)
+        old_to_new = self.view.convert_dialog(old_to_new=old_to_new)
         if old_to_new is None:
             return
         
         labels = list(old_to_new.values())
 
-        new_column = self.view.dialog_new_column_name(name=f'{column} - Stratified')
+        new_column = self.view.new_column_name_dialog(name=f'{column} - Stratified')
         if new_column is None:
             return
 
@@ -350,11 +350,11 @@ class ActionStratifyConvert(Action):
     def convert_categorical_variable(self, df: pd.DataFrame, column: str):
         old_to_new = {value: value for value in df[column].unique()}
         
-        old_to_new = self.view.dialog_convert(old_to_new=old_to_new)
+        old_to_new = self.view.convert_dialog(old_to_new=old_to_new)
         if old_to_new is None:
             return
         
-        new_column = self.view.dialog_new_column_name(name=f'{column} - Converted')
+        new_column = self.view.new_column_name_dialog(name=f'{column} - Converted')
         if new_column is None:
             return
         
@@ -365,7 +365,7 @@ class ActionStratifyConvert(Action):
 class ActionAddNewColumn(Action):
 
     def action(self):
-        column = self.view.dialog_new_column_name(name='New Column')
+        column = self.view.new_column_name_dialog(name='New Column')
         if column is None:
             return
         self.model.add_column(column=column)
@@ -377,13 +377,13 @@ class ActionRenameColumn(Action):
     def action(self):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
-            self.view.message_box_error(msg='Please select a column')
+            self.view.error_message(msg='Please select a column')
             return
         elif len(columns) > 1:
-            self.view.message_box_error(msg='Please select only one column')
+            self.view.error_message(msg='Please select only one column')
             return
         column = columns[0]
-        new_name = self.view.dialog_rename_column(name=column)
+        new_name = self.view.rename_column_dialog(name=column)
         if new_name is None:
             return
         self.model.rename_column(column=column, new_name=new_name)
@@ -395,7 +395,7 @@ class ActionForceCategorical(Action):
     def action(self):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
-            self.view.message_box_error(msg='Please select columns')
+            self.view.error_message(msg='Please select columns')
             return
         self.model.force_categorical(columns=columns)
         self.view.refresh_table()
@@ -406,7 +406,7 @@ class ActionUnforceCategorical(Action):
     def action(self):
         columns = self.view.get_selected_columns()
         if len(columns) == 0:
-            self.view.message_box_error(msg='Please select columns')
+            self.view.error_message(msg='Please select columns')
             return
         self.model.unforce_categorical(columns=columns)
         self.view.refresh_table()
@@ -415,7 +415,7 @@ class ActionUnforceCategorical(Action):
 class ActionFillMissingValues(Action):
 
     def action(self):
-        defaults = self.view.dialog_fill_missing_values()
+        defaults = self.view.fill_missing_values_dialog()
         if defaults is None:
             return
         binary, continuous, categorical = defaults
@@ -430,4 +430,4 @@ class ActionFillMissingValues(Action):
 class ActionNormalityTest(Action):
 
     def action(self):
-        self.view.message_box_info(msg='Normality test is being developed. Thank you for your patience. 😊')
+        self.view.info_message(msg='Normality test is being developed. Thank you for your patience. 😊')
