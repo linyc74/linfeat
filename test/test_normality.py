@@ -17,5 +17,9 @@ class TestNormality(TestCase):
         Normality().main(
             df=df,
             variables=df.columns.tolist(),
+            shapiro_p_threshold=0.05,
+            kolmogorov_p_threshold=-1,
+            skewness_threshold=1.0,
+            excess_kurtosis_threshold=10.0,
             outdir=self.outdir,
         )

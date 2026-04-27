@@ -217,3 +217,51 @@ class FillMissingValuesDialog:
                 self.combo_categorical.currentText(),
             )
         return None
+
+
+class NormalityTestDialog:
+
+    NAME_TO_OPTIONS = [  # do not use dict, to keep the order
+        ('Shapiro-Wilk p-value >', ['0.05']),
+        ('Kolmogorov-Smirnov p-value >', ['0.05']),
+        ('Skewness ≤', ['1.0']),
+        ('Excess Kurtosis ≤', ['1.0']),
+    ]
+
+    view: Type[QWidget]
+
+    dialog: QDialog
+    layout: QFormLayout
+    name_to_combo_boxes: Dict[str, QComboBox]
+    button_box: QDialogButtonBox
+
+    def __init__(self, view: Type[QWidget]):
+        self.view = view
+
+        self.dialog = QDialog(parent=self.view)
+        self.dialog.setWindowTitle('Normality Test')
+        self.layout = QFormLayout(parent=self.dialog)
+
+        self.name_to_combo_boxes = {}
+        for name, options in self.NAME_TO_OPTIONS:
+            combo = QComboBox(parent=self.dialog)
+            combo.addItems(options)
+            combo.setEditable(True)
+            self.name_to_combo_boxes[name] = combo
+            self.layout.addRow(name, combo)
+
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            parent=self.dialog,
+        )
+        self.button_box.accepted.connect(self.dialog.accept)
+        self.button_box.rejected.connect(self.dialog.reject)
+        self.layout.addWidget(self.button_box)
+
+    def __call__(self) -> Optional[Tuple[str, str, str, str]]:  # shapiro_p, kolmogorov_p, skewness, excess_kurtosis
+        if self.dialog.exec_() == QDialog.Accepted:
+            ret = []
+            for _, combo in self.name_to_combo_boxes.items():
+                ret.append(combo.currentText())
+            return tuple(ret)
+        return None

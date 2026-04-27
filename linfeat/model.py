@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any, Union, Tuple, Type, Set
+from .normality import Normality
 from .univariable import UnivariableStatistics
 from .multivariable import MultivariableRegression
 from .basic import determine_variable_type, BINARY, CATEGORICAL, CONTINUOUS
@@ -428,6 +429,45 @@ class Model:
 
         self.__add_to_undo_cache()  # add to undo cache after successful fill missing values
         self.dataframe = df
+    
+    def normality_test(
+            self,
+            shapiro_p: str,
+            kolmogorov_p: str,
+            skewness: str,
+            excess_kurtosis: str,
+            outdir: str):
+
+        df = self.dataframe.copy()
+
+        shapiro_p = float(shapiro_p)
+        kolmogorov_p = float(kolmogorov_p)
+        skewness = float(skewness)
+        excess_kurtosis = float(excess_kurtosis)
+
+        continuous_variables = []
+        for c in df.columns:
+            if determine_variable_type(df[c]) == CONTINUOUS:
+                continuous_variables.append(c)
+                df[c] = df[c].astype(float)
+
+        stats_df = Normality().main(
+            df=df,
+            variables=continuous_variables,
+            shapiro_p_threshold=shapiro_p,
+            kolmogorov_p_threshold=kolmogorov_p,
+            skewness_threshold=skewness,
+            excess_kurtosis_threshold=excess_kurtosis,
+            outdir=outdir,
+        )
+
+        variables_passed = stats_df[stats_df['Pass Normality Test']]['Variable'].tolist()
+        variables_failed = stats_df[~stats_df['Pass Normality Test']]['Variable'].tolist()
+
+        for variable in variables_passed:
+            self.column_to_parametric[variable] = True
+        for variable in variables_failed:
+            self.column_to_parametric[variable] = False
 
 
 def append(

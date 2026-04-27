@@ -11,8 +11,8 @@ from .views.parametric import SetParametricVariablesDialog
 from .views.stratify_convert import StratifyDialog, ConvertDialog
 from .views.message import InfoMessage, ErrorMessage, YesNoMessage
 from .views.file import OpenFileDialog, SaveAsFileDialog, OpenDirectoryDialog
-from .views.combo_box import EditRowDialog, SelectOutcomeDialog, FillMissingValuesDialog
 from .views.line_edit import FindDialog, EditCellDialog, NewColumnNameDialog, RenameColumnDialog
+from .views.combo_box import EditRowDialog, SelectOutcomeDialog, FillMissingValuesDialog, NormalityTestDialog
 
 
 def resource_path(*parts: str) -> str:
@@ -299,11 +299,12 @@ class View(QWidget):
         self.error_message = ErrorMessage(self)
         self.yes_no_message = YesNoMessage(self)
 
-        self.edit_row_dialog = EditRowDialog(self)
         self.set_parametric_variables_dialog = SetParametricVariablesDialog(self)
 
+        self.edit_row_dialog = EditRowDialog(self)
         self.select_outcome_dialog = SelectOutcomeDialog(self)
         self.fill_missing_values_dialog = FillMissingValuesDialog(self)
+        self.normality_test_dialog = NormalityTestDialog(self)
         
         self.color_dialog = ColorDialog(self)
 

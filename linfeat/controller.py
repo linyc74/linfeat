@@ -19,6 +19,9 @@ class Controller:
         self.__connect_short_actions()
         self.__connect_drag_drop_actions()
 
+        self.model.open(file=f'~/Desktop/Table 1 raw data edited.xlsx')
+        self.view.refresh_table()
+
     def __init_actions(self):
         self.action_open = ActionOpen(self)
         self.action_open_dropped_file = ActionOpenDroppedFile(self)
@@ -430,4 +433,20 @@ class ActionFillMissingValues(Action):
 class ActionNormalityTest(Action):
 
     def action(self):
-        self.view.info_message(msg='Normality test is being developed. Thank you for your patience. 😊')
+        thresholds = self.view.normality_test_dialog()
+        if thresholds is None:
+            return
+        shapiro_p, kolmogorov_p, skewness, excess_kurtosis = thresholds
+
+        outdir = self.view.open_directory_dialog(caption='Select Output Directory')
+        if outdir == '':
+            return
+        
+        self.model.normality_test(
+            shapiro_p=shapiro_p,
+            kolmogorov_p=kolmogorov_p,
+            skewness=skewness,
+            excess_kurtosis=excess_kurtosis,
+            outdir=outdir,
+        )
+        self.view.info_message(msg='Normality test completed\nSet parametric variables accordingly')
