@@ -164,6 +164,7 @@ class UnivariableStatistics:
         group_values = [self.df[y][self.df[x] == name] for name in group_names]  # list of vectors
         group_means = [group.mean() for group in group_values]  # list of scalars
         group_std_devs = [group.std() for group in group_values]  # list of scalars
+        group_counts = [group.count() for group in group_values]  # list of scalars
 
         if len(group_names) == 1:
             print(f'Warning: x="{x}", y="{y}", only one category. Skip test.')
@@ -185,9 +186,10 @@ class UnivariableStatistics:
             'p-value': pvalue,
         }
 
-        for name, mean, std_dev in zip(group_names, group_means, group_std_devs):
+        for name, mean, std_dev, count in zip(group_names, group_means, group_std_devs, group_counts):
             row[f'Mean ({name})'] = mean
             row[f'Std. Dev. ({name})'] = std_dev
+            row[f'Counts ({name})'] = count
         
         self.stats_data.append(row)
 
@@ -296,9 +298,14 @@ class WriteBinaryOutcomeSummaryTable:
         if pd.notna(OR):  # Chi-square test has no OR
             self.summary_df.loc[self.idx, 'Odds Ratio (95% CI)'] = f'{OR:.2f} ({ci_low:.2f}, {ci_high:.2f})'
         
+        matrix = self._confusion_matrix(stat)  # variable rows, outcome columns
+
+        for outcome in matrix.columns:
+            count = matrix[outcome].sum()  # sum the column of the outcome
+            self.summary_df.loc[self.idx, outcome] = count
+        
         self.idx += 1  # to the next line to write detailed counts per category
 
-        matrix = self._confusion_matrix(stat)  # variable rows, outcome columns
         for category in matrix.index:  # each row is a category of the variable
             for outcome in matrix.columns:
                 count = matrix.loc[category, outcome]
@@ -326,7 +333,8 @@ class WriteBinaryOutcomeSummaryTable:
         for outcome in self.outcome_to_count.keys():
             mean = stat[f'Mean ({outcome})']
             std = stat[f'Std. Dev. ({outcome})']
-            self.summary_df.loc[self.idx, outcome] = f'{mean:.2f} ± {std:.2f}'
+            count = stat[f'Counts ({outcome})']
+            self.summary_df.loc[self.idx, outcome] = f'{mean:.2f} ± {std:.2f} (N = {count})'
         
         self.idx += 1
 
