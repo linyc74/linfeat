@@ -189,14 +189,14 @@ class Model:
         self.dataframe = new
 
     def append_row(self, attributes: Dict[str, str]):
-        series = []
+        row = {}
         for key, value in attributes.items():
             if key in self.forced_categorical_columns:
-                series.append(cast_to_categorical(value))  # categorical str
+                row[key] = cast_to_categorical(value)  # categorical str
             else:
-                series.append(cast_to_appropriate_type(value))
-        series = pd.Series(data=series, dtype=object)
-        new = append(self.dataframe, series)
+                row[key] = cast_to_appropriate_type(value)
+        row = pd.Series(data=row, dtype=object)
+        new = append(self.dataframe, row)
 
         self.__add_to_undo_cache()  # add to undo cache after successful append
         self.dataframe = new
