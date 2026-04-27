@@ -49,9 +49,14 @@ class Normality:
                 continue
 
             _, shapiro_p = shapiro(df[variable])
-            _, kolmogorov_p = kstest(df[variable], 'norm')
+
+            mu = df[variable].mean()
+            sigma = df[variable].std()
+            _, kolmogorov_p = kstest(df[variable], 'norm', args=(mu, sigma))
+            
             skewness = skew(df[variable], bias=False, nan_policy='omit')
             excess_kurtosis = kurtosis(df[variable], fisher=True, bias=False, nan_policy='omit')
+            
             self.stats_data.append({
                 'Variable': variable,
                 'Shapiro-Wilk p-value': shapiro_p,
@@ -59,6 +64,7 @@ class Normality:
                 'Skewness': skewness,
                 'Excess Kurtosis': excess_kurtosis,
             })
+            
             self.qq_plot(variable)
 
         df = pd.DataFrame(self.stats_data)
@@ -88,7 +94,7 @@ class Normality:
     
     def write_summary(self):
         passed = self.stats_df[self.stats_df['Pass Normality Test']]['Variable'].tolist()
-        passed = [p.replace('\n', ' ') for p in passed]
+        passed = [p.replace('\n', ' ') for p in passed]  # keep it single line
         failed = self.stats_df[~self.stats_df['Pass Normality Test']]['Variable'].tolist()
         failed = [p.replace('\n', ' ') for p in failed]
         with open(f'{self.outdir}/summary.txt', 'w', encoding='utf-8-sig') as fh:
