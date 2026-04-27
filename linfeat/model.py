@@ -361,17 +361,15 @@ class Model:
     
     def force_categorical(self, columns: List[str]):
         df = self.dataframe.copy()
+
+        # only force categorical for columns that are not already forced categorical
+        columns = [c for c in columns if c not in self.forced_categorical_columns]
+        if len(columns) == 0:
+            return
         
-        df_changed = False
         for column in columns:
-            if column in self.forced_categorical_columns:
-                continue
-            df_changed = True
             series = [cast_to_categorical(v) for v in df[column]]
             df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
-
-        if not df_changed:
-            return
 
         self.__add_to_undo_cache()  # add to undo cache after successful force categorical
         self.dataframe = df
@@ -381,16 +379,14 @@ class Model:
     def unforce_categorical(self, columns: List[str]):
         df = self.dataframe.copy()
 
-        df_changed = False
+        # only unforce categorical for columns that are already forced categorical
+        columns = [c for c in columns if c in self.forced_categorical_columns]
+        if len(columns) == 0:
+            return
+
         for column in columns:
-            if column not in self.forced_categorical_columns:
-                continue
-            df_changed = True
             series = [cast_to_appropriate_type(v) for v in df[column]]
             df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
-
-        if not df_changed:
-            return
 
         self.__add_to_undo_cache()  # add to undo cache after successful unforce categorical
         self.dataframe = df
@@ -450,6 +446,9 @@ class Model:
             if determine_variable_type(df[c]) == CONTINUOUS:
                 continuous_variables.append(c)
                 df[c] = df[c].astype(float)
+        
+        if len(continuous_variables) == 0:
+            raise ValueError('No continuous variables found')
 
         stats_df = Normality().main(
             df=df,

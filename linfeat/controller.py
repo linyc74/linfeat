@@ -93,7 +93,6 @@ class ActionOpen(Action):
 
     def action(self):
         file = self.view.open_file_dialog()
-        print(file)
         if file == '':
             return
         self.model.open(file=file)
