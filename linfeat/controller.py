@@ -19,9 +19,6 @@ class Controller:
         self.__connect_short_actions()
         self.__connect_drag_drop_actions()
 
-        self.model.open(file=f'~/Desktop/Table 1 raw data edited.xlsx')
-        self.view.refresh_table()
-
     def __init_actions(self):
         self.action_open = ActionOpen(self)
         self.action_open_dropped_file = ActionOpenDroppedFile(self)
