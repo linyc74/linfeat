@@ -33,8 +33,8 @@ class Controller:
         self.action_rename_column = ActionRenameColumn(self)
         self.action_sort_ascending = ActionSortAscending(self)
         self.action_sort_descending = ActionSortDescending(self)
-        self.action_delete_selected_rows = ActionDeleteSelectedRows(self)
-        self.action_delete_selected_columns = ActionDeleteSelectedColumns(self)
+        self.action_delete_rows = ActionDeleteRows(self)
+        self.action_delete_columns = ActionDeleteColumns(self)
         self.action_control_s = ActionSaveAs(self)
         self.action_control_f = ActionFind(self)
         self.action_control_z = ActionUndo(self)
@@ -163,7 +163,7 @@ class ActionSortDescending(ActionSort):
     ASCENDING = False
 
 
-class ActionDeleteSelectedRows(Action):
+class ActionDeleteRows(Action):
 
     def action(self):
         rows = self.view.get_selected_rows()
@@ -174,7 +174,7 @@ class ActionDeleteSelectedRows(Action):
             self.view.refresh_table()
 
 
-class ActionDeleteSelectedColumns(Action):
+class ActionDeleteColumns(Action):
 
     def action(self):
         columns = self.view.get_selected_columns()

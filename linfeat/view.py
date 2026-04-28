@@ -190,13 +190,13 @@ class View(QWidget):
         'sort_ascending': 'Sort (A to Z)',
         'sort_descending': 'Sort (Z to A)',
 
-        'delete_selected_rows': 'Delete Selected Samples',
+        'delete_rows': 'Delete Samples',
         'add_new_row': 'Add New Sample',
         'edit_row': 'Edit Sample',
         'edit_cell': 'Edit',
         'fill_missing_values': 'Fill Missing Values',
         
-        'delete_selected_columns': 'Delete Selected Columns',
+        'delete_columns': 'Delete Columns',
         'add_new_column': 'Add New Column',
         'rename_column': 'Rename Column',
         'force_categorical': 'Set as Categorical',
@@ -219,13 +219,13 @@ class View(QWidget):
         'sort_ascending': (2, 1),
         'sort_descending': (3, 1),
 
-        'delete_selected_rows': (0, 2),
+        'delete_rows': (0, 2),
         'add_new_row': (1, 2),
         'edit_row': (2, 2),
         'edit_cell': (3, 2),
         'fill_missing_values': (4, 2),
 
-        'delete_selected_columns': (0, 3),
+        'delete_columns': (0, 3),
         'add_new_column': (1, 3),
         'rename_column': (2, 3),
         'force_categorical': (3, 3),
