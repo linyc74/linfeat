@@ -7,7 +7,7 @@ from .model import Model
 from .controller import Controller
 
 
-__version__ = 'v2.1.0-beta.2'
+__version__ = 'v2.1.0'
 
 
 def app():
