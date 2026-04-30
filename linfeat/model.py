@@ -15,17 +15,20 @@ class DataPacket:
     column_to_type: Dict[str, str]
     column_to_parametric: Dict[str, bool]
     forced_categorical_columns: Set[str]
+    column_to_summary: Dict[str, str]
 
     def __init__(
             self,
             df: pd.DataFrame,
             column_to_type: Dict[str, str],
             column_to_parametric: Dict[str, bool],
-            forced_categorical_columns: Set[str]):
+            forced_categorical_columns: Set[str],
+            column_to_summary: Dict[str, str]):
         self.df = df
         self.column_to_type = column_to_type
         self.column_to_parametric = column_to_parametric
         self.forced_categorical_columns = forced_categorical_columns
+        self.column_to_summary = column_to_summary
 
 
 class Model:
@@ -108,7 +111,8 @@ class Model:
         column_to_type = {c: determine_variable_type(df[c]) for c in df.columns}
         column_to_parametric = self.column_to_parametric.copy()
         forced_categorical_columns = self.forced_categorical_columns.copy()
-        return DataPacket(df, column_to_type, column_to_parametric, forced_categorical_columns)
+        column_to_summary = generate_column_to_summary(df)
+        return DataPacket(df, column_to_type, column_to_parametric, forced_categorical_columns, column_to_summary)
 
     def sort_dataframe(
             self,
@@ -522,3 +526,22 @@ def cast_to_categorical(value: Any) -> Union[str, float]:
             return np.nan
 
     return str(v)
+
+
+def generate_column_to_summary(df: pd.DataFrame) -> Dict[str, str]:
+    ret = {}
+    for column in df.columns:
+        type_ = determine_variable_type(df[column])
+        summary = f'{column}\n\n{type_.capitalize()} variable\n\n'
+        if type_ in [BINARY, CATEGORICAL]:
+            for value, count in df[column].value_counts().to_dict().items():
+                summary += f'{value}: {count}\n'
+        elif type_ == CONTINUOUS:
+            summary += f'Mean ± SD: {df[column].mean():.3g} ± {df[column].std():.3g}\n'
+            summary += f'Min: {df[column].min():.3g}\n'
+            summary += f'Max: {df[column].max():.3g}\n'
+            summary += f'N: {df[column].count()}'
+        else:
+            raise ValueError(f'Unknown variable type "{type_}" of the column "{column}"')
+        ret[column] = summary.strip()
+    return ret

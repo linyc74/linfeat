@@ -68,6 +68,7 @@ class Table(QTableWidget):
         column_to_type = packet.column_to_type
         column_to_parametric = packet.column_to_parametric
         forced_categorical_columns = packet.forced_categorical_columns
+        column_to_summary = packet.column_to_summary
 
         self.setRowCount(len(df.index))
         self.setColumnCount(len(df.columns))
@@ -80,15 +81,14 @@ class Table(QTableWidget):
                 font.setBold(True)
                 item.setFont(font)
                 variable_type = 'forced_categorical'
-                hint = 'User-defined categorical variable'
             else:
                 variable_type = column_to_type[column]
-                hint = f'{variable_type.capitalize()} variable'
+            summary = column_to_summary.get(column, '')
             png = f'{variable_type}.png'
             icon_file = resource_path('icon', png)
             item.setIcon(QIcon(icon_file))
             item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-            item.setToolTip(hint)
+            item.setToolTip(summary)
             self.setHorizontalHeaderItem(i, item)
 
         # convert to a pure numpy matrix of str to speed up
