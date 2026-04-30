@@ -94,18 +94,32 @@ class Normality:
     
     def write_summary(self):
         passed = self.stats_df[self.stats_df['Pass Normality Test']]['Variable'].tolist()
-        passed = [p.replace('\n', ' ') for p in passed]  # keep it single line
         failed = self.stats_df[~self.stats_df['Pass Normality Test']]['Variable'].tolist()
-        failed = [p.replace('\n', ' ') for p in failed]
         with open(f'{self.outdir}/summary.txt', 'w', encoding='utf-8-sig') as fh:
             fh.write(f'Shapiro-Wilk p-value threshold: {self.shapiro_p_threshold}\n')
             fh.write(f'Kolmogorov-Smirnov p-value threshold: {self.kolmogorov_p_threshold}\n')
             fh.write(f'Skewness threshold: {self.skewness_threshold}\n')
             fh.write(f'Excess Kurtosis threshold: {self.excess_kurtosis_threshold}\n\n')
-            p_str = '\n- '.join(passed)
-            f_str = '\n- '.join(failed)
-            fh.write(f'The following {len(passed)} variables passed normality test:\n- {p_str}\n\n')
-            fh.write(f'The following {len(failed)} variables failed normality test:\n- {f_str}\n')
+            
+            if len(passed) == 0:
+                fh.write('No variables passed normality test.\n')
+            else:
+                s = 's' if len(passed) > 1 else ''
+                fh.write(f'The following {len(passed)} variable{s} passed normality test:\n')
+            for variable in passed:
+                v = variable.replace('\n', ' ')  # keep it single line
+                fh.write(f'- {v}\n')
+            
+            fh.write('\n')
+            
+            if len(failed) == 0:
+                fh.write('No variables failed normality test.\n')
+            else:
+                s = 's' if len(failed) > 1 else ''
+                fh.write(f'The following {len(failed)} variable{s} failed normality test:\n')
+            for variable in failed:
+                v = variable.replace('\n', ' ')  # keep it single line
+                fh.write(f'- {v}\n')
 
 
 def replace_invalid_path_chars(s: str) -> str:

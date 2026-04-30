@@ -79,13 +79,16 @@ class Table(QTableWidget):
                 font = item.font()
                 font.setBold(True)
                 item.setFont(font)
-                png = 'forced_categorical.png'
+                variable_type = 'forced_categorical'
+                hint = 'User-defined categorical variable'
             else:
                 variable_type = column_to_type[column]
-                png = f'{variable_type}.png'
+                hint = f'{variable_type.capitalize()} variable'
+            png = f'{variable_type}.png'
             icon_file = resource_path('icon', png)
             item.setIcon(QIcon(icon_file))
             item.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            item.setToolTip(hint)
             self.setHorizontalHeaderItem(i, item)
 
         # convert to a pure numpy matrix of str to speed up
@@ -194,15 +197,16 @@ class View(QWidget):
         'add_new_row': 'Add New Sample',
         'edit_row': 'Edit Sample',
         'edit_cell': 'Edit',
-        'fill_missing_values': 'Fill Missing Values',
         
         'delete_columns': 'Delete Columns',
         'add_new_column': 'Add New Column',
         'rename_column': 'Rename Column',
-        'force_categorical': 'Set as Categorical',
-        'unforce_categorical': 'Unset Categorical',
 
         'stratify_convert': 'Stratify / Convert',
+        'force_categorical': 'Set as Categorical',
+        'unforce_categorical': 'Unset Categorical',
+        'fill_missing_values': 'Fill Missing Values',
+
         'set_parametric_variables': 'Set Parametric Variables',
         'normality_test': 'Normality Test',
         'univariable_statistics': 'Univariable Statistics',
@@ -223,21 +227,22 @@ class View(QWidget):
         'add_new_row': (1, 2),
         'edit_row': (2, 2),
         'edit_cell': (3, 2),
-        'fill_missing_values': (4, 2),
 
         'delete_columns': (0, 3),
         'add_new_column': (1, 3),
         'rename_column': (2, 3),
-        'force_categorical': (3, 3),
-        'unforce_categorical': (4, 3),
 
         'stratify_convert': (0, 4),
-        'set_parametric_variables': (1, 4),
-        'normality_test': (2, 4),
-        'univariable_statistics': (3, 4),
-        'multivariable_regression': (4, 4),
+        'force_categorical': (1, 4),
+        'unforce_categorical': (2, 4),
+        'fill_missing_values': (3, 4),
 
-        # 'find': (0, 5),
+        'set_parametric_variables': (0, 5),
+        'normality_test': (1, 5),
+        'univariable_statistics': (2, 5),
+        'multivariable_regression': (3, 5),
+
+        # 'find': (0, 6),
     }
     SHORTCUT_NAME_TO_KEY_SEQUENCE = {
         'control_s': 'Ctrl+S',

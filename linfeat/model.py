@@ -393,13 +393,13 @@ class Model:
         for column in columns:
             self.forced_categorical_columns.remove(column)
 
-    def fill_missing_values(self, binary: str, continuous: str, categorical: str):
+    def fill_missing_values(self, columns: List[str], binary: str, continuous: str, categorical: str):
         df = self.dataframe.copy()
 
         assert binary in ['0', '1'], f'Binary must be 0 or 1. Got "{binary}".'
         assert (continuous.lower() in ['mean', 'median']) or continuous.isdigit(), f'Continuous must be mean, median, or a numeric value. Got "{continuous}".'
 
-        for column in df.columns:
+        for column in columns:
             if not df[column].isna().any():
                 continue
 

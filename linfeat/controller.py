@@ -414,11 +414,16 @@ class ActionUnforceCategorical(Action):
 class ActionFillMissingValues(Action):
 
     def action(self):
+        columns = self.view.get_selected_columns()
+        if len(columns) == 0:
+            self.view.error_message(msg='Please select columns')
+            return
         defaults = self.view.fill_missing_values_dialog()
         if defaults is None:
             return
         binary, continuous, categorical = defaults
         self.model.fill_missing_values(
+            columns=columns,
             binary=binary,
             continuous=continuous,
             categorical=categorical
