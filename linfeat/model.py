@@ -537,6 +537,7 @@ def generate_column_to_summary(df: pd.DataFrame) -> Dict[str, str]:
         if type_ in [BINARY, CATEGORICAL]:
             for value, count in df[column].value_counts().to_dict().items():
                 summary += f'{value}: {count}\n'
+            summary += f'\nTotal: {df[column].count()}'
         elif type_ == CONTINUOUS:
             summary += f'Mean ± SD: {df[column].mean():.3g} ± {df[column].std():.3g}\n'
             summary += f'Min: {df[column].min():.3g}\n'
