@@ -44,3 +44,18 @@ class YesNoMessage(Message):
     def __call__(self, msg: str) -> bool:
         self.box.setText(msg)
         return self.box.exec_() == QMessageBox.Yes
+
+
+class UnsavedDataMessage(Message):
+
+    TITLE = ' '
+    ICON = QMessageBox.Warning
+
+    def __init__(self, view: Type[QWidget]):
+        super().__init__(view=view)
+        self.box.setStandardButtons(QMessageBox.Save | QMessageBox.No | QMessageBox.Cancel)
+        self.box.setDefaultButton(QMessageBox.Cancel)
+
+    def __call__(self) -> int:
+        self.box.setText('You have unsaved changes. Do you want to save them?')
+        return self.box.exec_()  # QMessageBox.Save, QMessageBox.No, QMessageBox.Cancel are the returned integers

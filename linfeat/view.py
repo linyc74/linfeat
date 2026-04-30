@@ -3,14 +3,14 @@ from typing import List, Tuple
 from os.path import dirname, exists, expanduser, normpath, join
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QObject
 from PyQt5.QtGui import QIcon, QKeySequence, QDropEvent
-from PyQt5.QtWidgets import QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QPushButton, QGridLayout, QShortcut, QAbstractItemView
+from PyQt5.QtWidgets import QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem, QPushButton, QGridLayout, QShortcut, QAbstractItemView, QMessageBox
 from .model import Model
 from .views.base import str_
 from .views.color import ColorDialog
 from .views.parametric import SetParametricVariablesDialog
 from .views.stratify_convert import StratifyDialog, ConvertDialog
-from .views.message import InfoMessage, ErrorMessage, YesNoMessage
 from .views.file import OpenFileDialog, SaveAsFileDialog, OpenDirectoryDialog
+from .views.message import InfoMessage, ErrorMessage, YesNoMessage, UnsavedDataMessage
 from .views.line_edit import FindDialog, EditCellDialog, NewColumnNameDialog, RenameColumnDialog
 from .views.combo_box import EditRowDialog, SelectOutcomeDialog, FillMissingValuesDialog, NormalityTestDialog
 
@@ -303,6 +303,7 @@ class View(QWidget):
         self.info_message = InfoMessage(self)
         self.error_message = ErrorMessage(self)
         self.yes_no_message = YesNoMessage(self)
+        self.unsaved_data_message = UnsavedDataMessage(self)
 
         self.set_parametric_variables_dialog = SetParametricVariablesDialog(self)
 
@@ -335,3 +336,14 @@ class View(QWidget):
 
     def select_cell(self, index: int, column: str):
         self.table.select_cell(index=index, column=column)
+
+    def closeEvent(self, event):
+        if not self.model.is_current_dataframe_saved():
+            reply = self.unsaved_data_message()
+            if reply == QMessageBox.Save:
+                self.shortcut_control_s.activated.emit()
+                event.accept()
+            elif reply == QMessageBox.No:
+                event.accept()
+            elif reply == QMessageBox.Cancel:
+                event.ignore()

@@ -38,7 +38,7 @@ class Model:
     dataframe: pd.DataFrame
     forced_categorical_columns: Set[str]
     column_to_parametric: Dict[str, bool]
-    active_file: Optional[str]
+    saved_dataframe_id: Optional[int]
 
     undo_cache: List[pd.DataFrame]
     redo_cache: List[pd.DataFrame]
@@ -47,7 +47,7 @@ class Model:
         self.dataframe = pd.DataFrame()
         self.column_to_parametric = {}
         self.forced_categorical_columns = set()
-        self.active_file = None
+        self.saved_dataframe_id = id(self.dataframe)  # initial state is set to saved
         self.undo_cache = []
         self.redo_cache = []
 
@@ -64,7 +64,7 @@ class Model:
         self.dataframe = self.redo_cache.pop()
 
     def __add_to_undo_cache(self):
-        self.undo_cache.append(self.dataframe.copy())
+        self.undo_cache.append(self.dataframe)
         if len(self.undo_cache) > self.MAX_UNDO:
             self.undo_cache.pop(0)
         self.redo_cache = []  # clear redo cache
@@ -76,8 +76,6 @@ class Model:
             df = pd.read_csv(file, keep_default_na=False, dtype=object)
         else:  # assume tab-separated file
             df = pd.read_csv(file, sep='\t', keep_default_na=False, dtype=object)
-
-        self.active_file = file
 
         matrix = df.to_numpy(dtype=object, copy=True)
         columns = df.columns.tolist()
@@ -95,6 +93,7 @@ class Model:
         self.dataframe = df
         self.column_to_parametric = {column: False for column in df.columns}
         self.forced_categorical_columns = set()
+        self.saved_dataframe_id = id(self.dataframe)  # update saved dataframe id after successful open
 
     def save(self, file: str):
         if file.endswith('.xlsx'):
@@ -102,9 +101,8 @@ class Model:
         elif file.endswith('.csv'):
             self.dataframe.to_csv(file, index=False, encoding='utf-8-sig')
         else:  # assume tab-separated file
-            self.dataframe.to_csv(file, index=False, sep='\t', encoding='utf-8-sig')
-
-        self.active_file = file
+            self.dataframe.to_csv(file, index=False, sep='\t', encoding='utf-8-sig')        
+        self.saved_dataframe_id = id(self.dataframe)  # update saved dataframe id after successful save
 
     def get_data_packet(self) -> DataPacket:
         df = self.dataframe.copy()
@@ -471,6 +469,9 @@ class Model:
             self.column_to_parametric[variable] = True
         for variable in variables_failed:
             self.column_to_parametric[variable] = False
+
+    def is_current_dataframe_saved(self) -> bool:
+        return id(self.dataframe) == self.saved_dataframe_id
 
 
 def append(
