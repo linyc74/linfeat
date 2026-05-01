@@ -35,13 +35,16 @@ class Model:
 
     MAX_UNDO = 100
 
+    # these 3 are cached simultaneously for undo/redo
     dataframe: pd.DataFrame
     forced_categorical_columns: Set[str]
     column_to_parametric: Dict[str, bool]
-    saved_dataframe_id: Optional[int]
 
     undo_cache: List[Tuple[pd.DataFrame, Set[str], Dict[str, bool]]]
     redo_cache: List[Tuple[pd.DataFrame, Set[str], Dict[str, bool]]]
+
+    # not cached, only the current state
+    saved_dataframe_id: Optional[int]
 
     def __init__(self):
         self.dataframe = pd.DataFrame()
@@ -114,19 +117,19 @@ class Model:
             self,
             by: str,
             ascending: bool):
-        new = self.dataframe.copy()
+        df = self.dataframe.copy()
         forced_categorical_columns = self.forced_categorical_columns.copy()
         column_to_parametric = self.column_to_parametric.copy()
 
         # str cannot be compared with float/int, so we need to convert all to str in that case
         dtypes = set()
-        for value in new[by]:
+        for value in df[by]:
             dtypes.add(type(value))
         if str in dtypes and (float in dtypes or int in dtypes):
-            new['sorting'] = new[by].astype(str)
+            df['sorting'] = df[by].astype(str)
             by = 'sorting'
 
-        new = new.sort_values(
+        df = df.sort_values(
             by=by,
             ascending=ascending,
             kind='mergesort'  # deterministic, keep the original order when tied
@@ -135,10 +138,10 @@ class Model:
         )
 
         if by == 'sorting':
-            new.drop(columns=['sorting'], inplace=True)
+            df.drop(columns=['sorting'], inplace=True)
 
         self.__add_to_undo_cache()  # add to undo cache after successful sort
-        self.dataframe = new
+        self.dataframe = df
         self.forced_categorical_columns = forced_categorical_columns
         self.column_to_parametric = column_to_parametric
 
@@ -190,46 +193,56 @@ class Model:
         return '' if pd.isna(val) else val
 
     def update_row(self, row: int, attributes: Dict[str, str]):
-        new = self.dataframe.copy()
+        df = self.dataframe.copy()
+        forced_categorical_columns = self.forced_categorical_columns.copy()
+        column_to_parametric = self.column_to_parametric.copy()
+
         for key, value in attributes.items():
-            if key not in new.columns:
+            if key not in df.columns:
                 raise ValueError(f'Column "{key}" not found in dataframe')
-            if key in self.forced_categorical_columns:
-                new.loc[row, key] = cast_to_categorical(value)  # categorical str
+            if key in forced_categorical_columns:
+                df.loc[row, key] = cast_to_categorical(value)  # categorical str
             else:
-                new.loc[row, key] = cast_to_appropriate_type(value)
+                df.loc[row, key] = cast_to_appropriate_type(value)
 
         self.__add_to_undo_cache()  # add to undo cache after successful update
-        self.dataframe = new
-        self.forced_categorical_columns = self.forced_categorical_columns.copy()
-        self.column_to_parametric = self.column_to_parametric.copy()
+        self.dataframe = df
+        self.forced_categorical_columns = forced_categorical_columns
+        self.column_to_parametric = column_to_parametric
 
     def append_row(self, attributes: Dict[str, str]):
+        df = self.dataframe.copy()
+        forced_categorical_columns = self.forced_categorical_columns.copy()
+        column_to_parametric = self.column_to_parametric.copy()
+
         row = {}
         for key, value in attributes.items():
-            if key in self.forced_categorical_columns:
+            if key in forced_categorical_columns:
                 row[key] = cast_to_categorical(value)  # categorical str
             else:
                 row[key] = cast_to_appropriate_type(value)
         row = pd.Series(data=row, dtype=object)
-        new = append(self.dataframe, row)
+        df = append(df, row)
 
         self.__add_to_undo_cache()  # add to undo cache after successful append
-        self.dataframe = new
-        self.forced_categorical_columns = self.forced_categorical_columns.copy()
-        self.column_to_parametric = self.column_to_parametric.copy()
+        self.dataframe = df
+        self.forced_categorical_columns = forced_categorical_columns
+        self.column_to_parametric = column_to_parametric
 
     def update_cell(self, row: int, column: str, value: Any):
-        new = self.dataframe.copy()
+        df = self.dataframe.copy()
+        forced_categorical_columns = self.forced_categorical_columns.copy()
+        column_to_parametric = self.column_to_parametric.copy()
+
         if column in self.forced_categorical_columns:
-            new.loc[row, column] = cast_to_categorical(value)
+            df.loc[row, column] = cast_to_categorical(value)
         else:
-            new.loc[row, column] = cast_to_appropriate_type(value)
+            df.loc[row, column] = cast_to_appropriate_type(value)
 
         self.__add_to_undo_cache()  # add to undo cache after successful update
-        self.dataframe = new
-        self.forced_categorical_columns = self.forced_categorical_columns.copy()
-        self.column_to_parametric = self.column_to_parametric.copy()
+        self.dataframe = df
+        self.forced_categorical_columns = forced_categorical_columns
+        self.column_to_parametric = column_to_parametric
 
     def find(self, text: str, start: Optional[Tuple[int, str]]) -> Optional[Tuple[int, str]]:
         if start is None:
@@ -249,18 +262,27 @@ class Model:
                     return r, self.dataframe.columns[c]
 
     def set_parametric_properties(self, column_to_parametric: Dict[str, bool]):
+        df = self.dataframe.copy()
+        forced_categorical_columns = self.forced_categorical_columns.copy()
+        column_to_parametric = self.column_to_parametric.copy()
+
         for c, parametric in column_to_parametric.items():
-            if c in self.forced_categorical_columns:
+            if c in forced_categorical_columns:
                 # this is a forced categorical variable
                 # do not change its parametric property which might be already set by the user
                 continue
-            elif determine_variable_type(self.dataframe[c]) == CONTINUOUS:
+            elif determine_variable_type(df[c]) == CONTINUOUS:
                 # only continous variable can be defined as parametric or nonparametric
-                self.column_to_parametric[c] = parametric
-            else:
-                # categorical or binary variable can only be nonparametric
-                # do not change its parametric property
-                continue
+                column_to_parametric[c] = parametric
+        
+        if column_to_parametric == self.column_to_parametric:
+            # no change, do not need to add to undo cache
+            return
+        
+        self.__add_to_undo_cache()  # add to undo cache after successful set parametric properties
+        self.dataframe = df
+        self.forced_categorical_columns = forced_categorical_columns
+        self.column_to_parametric = column_to_parametric
 
     def stratify(
             self,
