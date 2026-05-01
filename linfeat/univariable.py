@@ -456,12 +456,13 @@ class StackedBarPlot:
     def plot(self):
         bottom = np.zeros(shape=len(self.df.columns))
         for i in range(len(self.df.index)):
+            color = self.colors[i % len(self.colors)]  # cycle through the colors if there are too many categories
             plt.bar(
                 x=self.df.columns,
                 height=self.df.iloc[i, :],
                 bottom=bottom,
                 width=self.BAR_WIDTH,
-                color=self.colors[i],
+                color=color,
                 edgecolor='black',
                 linewidth=0.5
             )
