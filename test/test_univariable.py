@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from test.setup import TestCase
-from linfeat.univariable import UnivariableStatistics, create_contingency_table, get_colors
+from linfeat.univariable import UnivariableStatistics, create_contingency_table, get_colors, StackedBarPlot
 
 
 class TestUnivariableStatistics(TestCase):
@@ -268,3 +268,32 @@ class TestGetColors(TestCase):
         colors=[(1.0, 0.0, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0)]
         actual = get_colors(colors=colors)
         self.assertListEqual(actual, colors)  # not changed at all
+
+
+class TestStackedBarPlot(TestCase):
+
+    def setUp(self):
+        self.set_up(py_path=__file__)
+
+    def tearDown(self):
+        self.tear_down()
+
+    def test_main(self):
+        count_df = pd.DataFrame(
+            columns=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
+            index=['Outcome 0', 'Outcome 1', 'Outcome 2'],
+            data=[
+                [1, 2, 5, 6, 3, 2, 5, 6],
+                [11, 6, 1, 10, 6, 6, 1, 8],
+                [2, 3, 8, 0, 2, 3, 9, 2]
+            ],
+        )
+        count_df.index.name = 'Outcome'
+        count_df.columns.name = 'Group'
+        for n_groups in [2, 3, 4, 5, 6, 7, 8]:
+            StackedBarPlot().main(
+                count_df=count_df.iloc[:,0:n_groups],
+                colors=['lightgray', 'darkgray', 'lightblue', 'tomato'],
+                title='Title',
+                png=f'{self.outdir}/stacked_bar_plot_{n_groups}_groups.png'
+            )

@@ -100,10 +100,11 @@ def summarize_binary_outcome(df: pd.DataFrame, outcome: str):
 def config_matplotlib_font_for_language(names: List[str]):
     matplotlib.rc('font', family='DejaVu Sans')  # default font for English
     for name in names:
-        if contains_chinese(name):
-            matplotlib.rc('font', family='Microsoft JhengHei')
-            matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
-            break
+        if not isinstance(name, str):
+            if contains_chinese(name):
+                matplotlib.rc('font', family='Microsoft JhengHei')
+                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
+                break
 
 
 def contains_chinese(s: str) -> bool:

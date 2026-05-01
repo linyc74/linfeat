@@ -408,8 +408,9 @@ def replace_invalid_path_chars(s: str) -> str:
 
 class StackedBarPlot:
 
-    WIDTH = 5 / 2.54
-    HEIGHT = 5 / 2.54
+    WIDTH_PADDING = 3.6 / 2.54
+    WIDTH_PER_GROUP = 0.75 / 2.54
+    FIXED_HEIGHT = 5 / 2.54
     FONT_SIZE = 6
     BAR_WIDTH = 0.6
     Y_LABEL = 'Count'
@@ -442,12 +443,14 @@ class StackedBarPlot:
 
         matplotlib.rc('axes', linewidth=0.5)
 
-        outcome_name = self.df.index.name
-        char_width = 0.1219  # cm at font size 7
-        legend_width = len(outcome_name) * char_width / 2.54
-        figsize = (self.WIDTH + legend_width, self.HEIGHT)
+        n_groups = len(self.df.columns)
 
-        plt.figure(figsize=figsize)
+        outcome_name = self.df.index.name
+        char_width = 0.1219  # cm
+        legend_text_width = len(outcome_name) * char_width / 2.54
+
+        width = (n_groups * self.WIDTH_PER_GROUP) + self.WIDTH_PADDING + legend_text_width
+        plt.figure(figsize=(width, self.FIXED_HEIGHT))
 
     def plot(self):
         bottom = np.zeros(shape=len(self.df.columns))
