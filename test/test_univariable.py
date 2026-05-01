@@ -72,7 +72,7 @@ class TestUnivariableStatistics(TestCase):
             colors=['lightblue', 'tomato'],
         )
 
-    def test_skip_only_one_category_outcome(self):
+    def test_skip_tests_for_only_one_group(self):
         df=pd.read_csv(f'{self.indir}/data.csv', index_col=0)
         df['Binary Factor 1'] = 0
         df['Two Categories'] = 'A'
@@ -89,18 +89,31 @@ class TestUnivariableStatistics(TestCase):
             colors=['lightgray', 'darkgray'],
         )
 
-    def test_more_than_two_category_outcome(self):
-        with self.assertRaises(ValueError) as context:
-            UnivariableStatistics().main(
-                df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
-                variables=['Blautia 菌屬'],
-                outcome='Five Categories',
-                outdir=self.outdir,
-                parametric_outcome=False,
-                parametric_variables=[],  # no parametric features
-                colors='Set1',
-            )
-        self.assertEqual(str(context.exception), 'Outcome "Five Categories" has 5 classes, not supported for univariable statistics.')
+    def test_five_category_outcome(self):
+        UnivariableStatistics().main(
+            df=pd.read_csv(f'{self.indir}/data.csv', index_col=0),
+            variables=[
+                'Blautia 菌屬',
+                'Binary Factor 1',
+                '二元因子 2',
+                'Obesity(1)/Normal(0)',
+                'Parabacteroides_goldsteinii',
+                'Muribaculum_intestinale',
+                'Ligilactobacillus',
+                'Thomasclavelia',
+                'Lachnospiraceae',
+                'Faecalibaculum_rodentium',
+                'Lachnoclostridium',
+                'Erysipelotrichaceae',
+                'Lactobacillus_johnsonii',
+                'Bacteroides',
+            ],
+            outcome='Five Categories',
+            outdir=self.outdir,
+            parametric_outcome=False,
+            parametric_variables=[],  # no parametric features
+            colors='Set1',
+        )
 
     def test_parametric_continuous_outcome(self):
         UnivariableStatistics().main(

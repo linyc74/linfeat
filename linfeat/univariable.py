@@ -55,11 +55,10 @@ class UnivariableStatistics:
         self.stats_data = []
 
         if type_of(self.df[self.outcome]) in [BINARY, CATEGORICAL]:
-            n_outcomes = len(self.df[self.outcome].dropna().unique())
-            if n_outcomes == 1 or n_outcomes > 2:
-                s = '' if n_outcomes == 1 else 'es'
-                raise ValueError(f'Outcome "{self.outcome}" has {n_outcomes} class{s}, not supported for univariable statistics.')
-            self.binary_outcome()
+            outcome_values = self.df[self.outcome].dropna().unique()
+            if len(outcome_values) == 1:
+                raise ValueError(f'Outcome "{self.outcome}" has only 1 value "{outcome_values[0]}", not supported for univariable statistics.')
+            self.binary_or_categorical_outcome()
 
         elif type_of(self.df[self.outcome]) == CONTINUOUS:
             self.continuous_outcome()
@@ -79,7 +78,7 @@ class UnivariableStatistics:
             }[var_type]
         self.variables = sorted(self.variables, key=to_key)
 
-    def binary_outcome(self):
+    def binary_or_categorical_outcome(self):
         for variable in self.variables:
             if type_of(self.df[variable]) in [BINARY, CATEGORICAL]:
                 self.categorical_vs_categorical(x=variable, y=self.outcome)
@@ -88,8 +87,8 @@ class UnivariableStatistics:
                 parametric = variable in self.parametric_variables
                 self.categorical_vs_continuous(x=self.outcome, y=variable, parametric=parametric)
 
-        self.outcome_to_count = self.df[self.outcome].value_counts().to_dict()
-        WriteBinaryOutcomeSummaryTable().main(
+        self.outcome_to_count = self.df[self.outcome].value_counts().sort_index().to_dict()  # sort by index (outcome categories)
+        BinaryOrCategoricalOutcomeSummary().main(
             stats_data=self.stats_data,
             outcome_to_count=self.outcome_to_count,
             outdir=self.outdir)
@@ -245,7 +244,7 @@ class UnivariableStatistics:
         self.stats_df = self.stats_df.reindex(columns=columns)
 
 
-class WriteBinaryOutcomeSummaryTable:
+class BinaryOrCategoricalOutcomeSummary:
 
     stats_data: List[Dict[str, Any]]
     outcome_to_count: Dict[Union[str, int], int]
@@ -270,12 +269,14 @@ class WriteBinaryOutcomeSummaryTable:
             test = stat['Statistical Test']
             if test in ['Fisher\'s exact test', 'Chi-square test']:
                 self.categorical_vs_categorical_summary(stat)
-            elif test in ['Student\'s t-test', 'Mann-Whitney U test']:
+            elif test in ['Student\'s t-test', 'Mann-Whitney U test', 'ANOVA', 'Kruskal-Wallis test']:
                 self.categorical_vs_continuous_summary(stat)
             else:
-                print(f'Warning: "{test}" is not supported for binary outcome summary table. Skip.')
+                print(f'Warning: "{test}" is not supported for binary or categorical outcome summary table. Skip.')
         
         self.rename_summary_columns()
+        if self.summary_df['Odds Ratio (95% CI)'].isna().all():
+            self.summary_df.drop(columns=['Odds Ratio (95% CI)'], inplace=True)  # no OR, no need to show the column
 
         self.summary_df.to_csv(f'{self.outdir}/summary.csv', encoding='utf-8-sig', index=False)
     
@@ -644,7 +645,7 @@ def get_colors(colors: str | List[str|Tuple[float, float, float, float]]) -> Lis
 
     if isinstance(colors, str):  # is a colormap name
         cmap = plt.colormaps[colors]
-        return [cmap(i) for i in range(len(colors))]
+        return [cmap(i) for i in range(cmap.N)]
 
     elif isinstance(colors, list):  # is a list of color names, hex codes, or RGBA tuples
         return [to_rgba(c) for c in colors]
