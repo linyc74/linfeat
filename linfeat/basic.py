@@ -163,7 +163,6 @@ def config_matplotlib_font_for_language(names: List[str]):
 
     for font_name in chinese_font_candidates:
         if font_name in available_fonts:
-            print(f'Using font: {font_name}')
             matplotlib.rcParams['font.family'] = [font_name]
             matplotlib.rcParams['axes.unicode_minus'] = False
             return

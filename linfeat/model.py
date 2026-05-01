@@ -83,10 +83,7 @@ class Model:
             for j in range(matrix.shape[1]):
                 column = columns[j]
                 value = matrix[i, j]
-                if column in self.forced_categorical_columns:
-                    matrix[i, j] = cast_to_categorical(value)  # categorical str
-                else:
-                    matrix[i, j] = cast_to_appropriate_type(value)
+                matrix[i, j] = cast_to_appropriate_type(value)
         df = pd.DataFrame(matrix, index=df.index, columns=df.columns, dtype=object)
 
         self.__add_to_undo_cache()
