@@ -1,7 +1,8 @@
 import matplotlib
 import numpy as np
 import pandas as pd
-from typing import List, Iterable, Any
+from matplotlib import font_manager
+from typing import List, Iterable, Any, Set
 
 
 class Parameters:
@@ -97,20 +98,6 @@ def summarize_binary_outcome(df: pd.DataFrame, outcome: str):
     print(f'Negative(0): {n_neg} ({n_neg / len(df) * 100:.2f}%)\n')
 
 
-def config_matplotlib_font_for_language(names: List[str]):
-    matplotlib.rc('font', family='DejaVu Sans')  # default font for English
-    for name in names:
-        if not isinstance(name, str):
-            if contains_chinese(name):
-                matplotlib.rc('font', family='Microsoft JhengHei')
-                matplotlib.rc('axes', unicode_minus=False)  # show minus sign correctly when Chinese font is used
-                break
-
-
-def contains_chinese(s: str) -> bool:
-    return any('\u4e00' <= ch <= '\u9fff' for ch in s)
-
-
 BINARY = 'binary'
 CATEGORICAL = 'categorical'
 CONTINUOUS = 'continuous'
@@ -142,3 +129,43 @@ def determine_variable_type(series: Iterable[Any]) -> str:
         return CONTINUOUS
     else:
         return CATEGORICAL
+
+
+def contains_chinese(s: str) -> bool:
+    return any('\u4e00' <= ch <= '\u9fff' for ch in s)
+
+
+def get_available_fonts() -> Set[str]:
+    return {f.name for f in font_manager.fontManager.ttflist}
+
+
+def config_matplotlib_font_for_language(names: List[str]):
+    # default for English
+    matplotlib.rcParams['font.family'] = ['DejaVu Sans']
+    matplotlib.rcParams['axes.unicode_minus'] = True
+
+    has_chinese = any(
+        isinstance(name, str) and contains_chinese(name)
+        for name in names
+    )
+
+    if not has_chinese:
+        return
+
+    available_fonts = get_available_fonts()
+
+    chinese_font_candidates = [
+        'Microsoft JhengHei',
+        'PingFang TC',
+        'Arial Unicode MS',
+        'Noto Sans CJK TC',
+    ]
+
+    for font_name in chinese_font_candidates:
+        if font_name in available_fonts:
+            print(f'Using font: {font_name}')
+            matplotlib.rcParams['font.family'] = [font_name]
+            matplotlib.rcParams['axes.unicode_minus'] = False
+            return
+
+    print('Warning: no suitable Chinese font found by matplotlib.')
