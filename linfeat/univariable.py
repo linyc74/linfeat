@@ -87,10 +87,10 @@ class UnivariableStatistics:
                 parametric = variable in self.parametric_variables
                 self.categorical_vs_continuous(x=self.outcome, y=variable, parametric=parametric)
 
-        self.outcome_to_count = self.df[self.outcome].value_counts().sort_index().to_dict()  # sort by index (outcome categories)
+        outcome_to_count = self.df[self.outcome].value_counts().sort_index().to_dict()  # sort by index (outcome categories)
         BinaryOrCategoricalOutcomeSummary().main(
             stats_data=self.stats_data,
-            outcome_to_count=self.outcome_to_count,
+            outcome_to_count=outcome_to_count,
             outdir=self.outdir)
 
     def continuous_outcome(self):
@@ -318,11 +318,14 @@ class BinaryOrCategoricalOutcomeSummary:
         outcomes = self.outcome_to_count.keys()
         df = pd.DataFrame(columns=outcomes, dtype=int)
         for outcome in outcomes:
+            if f'Counts ({outcome})' not in stat:
+                continue
             count_str = stat[f'Counts ({outcome})']
             count_items = count_str.split(' | ')
             for item in count_items:
                 key, value = item.split(': ')
                 df.loc[key, outcome] = int(value)
+        df.fillna(0, inplace=True)
         return df
 
     def categorical_vs_continuous_summary(self, stat: Dict[str, Any]):
