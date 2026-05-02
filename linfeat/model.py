@@ -205,10 +205,7 @@ class Model:
         for key, value in attributes.items():
             if key not in df.columns:
                 raise ValueError(f'Column "{key}" not found in dataframe')
-            if key in forced_categorical_columns:
-                df.loc[row, key] = cast_to_categorical(value)  # categorical str
-            else:
-                df.loc[row, key] = cast_to_appropriate_type(value)
+            df.loc[row, key] = cast_to_appropriate_type(value)
 
         self._move_state_forward(
             dataframe=df,
@@ -220,10 +217,7 @@ class Model:
 
         row = {}
         for key, value in attributes.items():
-            if key in forced_categorical_columns:
-                row[key] = cast_to_categorical(value)  # categorical str
-            else:
-                row[key] = cast_to_appropriate_type(value)
+            row[key] = cast_to_appropriate_type(value)
         row = pd.Series(data=row, dtype=object)
         df = append(df, row)
 
@@ -235,10 +229,7 @@ class Model:
     def update_cell(self, row: int, column: str, value: Any):
         df, forced_categorical_columns, column_to_parametric = self._copy_state()
 
-        if column in self.forced_categorical_columns:
-            df.loc[row, column] = cast_to_categorical(value)
-        else:
-            df.loc[row, column] = cast_to_appropriate_type(value)
+        df.loc[row, column] = cast_to_appropriate_type(value)
 
         self._move_state_forward(
             dataframe=df,
@@ -380,12 +371,25 @@ class Model:
             forced_categorical_columns=forced_categorical_columns,
             column_to_parametric=column_to_parametric)
 
+    def get_number_of_missing_outcome(self, outcome: str) -> int:
+        return self.dataframe[outcome].isna().sum()
+
     def univariable_statistics(self, outdir: str, outcome: str, colors: List[str]):
         df = self.dataframe.copy()
-        assert df[outcome].notna().all(), f'Outcome "{outcome}" has missing values'
+
+        n = len(df)
+        df = df[df[outcome].notna()]
+        missing = n - len(df)
+        if missing > 0:
+            s = 's' if missing > 1 else ''
+            print(f'Dropping {missing} sample{s} with missing outcome "{outcome}" for univariable statistics.')
 
         for c in df.columns:
-            type_ = determine_variable_type(df[c])
+            if c in self.forced_categorical_columns:
+                type_ = CATEGORICAL
+            else:
+                type_ = determine_variable_type(df[c])
+
             if type_ == BINARY:
                 if df[c].isna().any():
                     df[c] = df[c].astype(float)  # missing values (np.nan) cannot be converted to int
@@ -426,9 +430,9 @@ class Model:
             return
         
         for column in columns:
-            series = [cast_to_categorical(v) for v in df[column]]
-            df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
             forced_categorical_columns.add(column)
+
+        # note that the state of dataframe is not changed
 
         self._move_state_forward(
             dataframe=df,
@@ -444,9 +448,9 @@ class Model:
             return
 
         for column in columns:
-            series = [cast_to_appropriate_type(v) for v in df[column]]
-            df[column] = pd.Series(data=series, dtype=object)  # always ensure object dtype
             forced_categorical_columns.remove(column)        
+
+        # note that the state of dataframe is not changed
 
         self._move_state_forward(
             dataframe=df,
@@ -455,9 +459,6 @@ class Model:
 
     def fill_missing_values(self, columns: List[str], binary: str, continuous: str, categorical: str):
         df, forced_categorical_columns, column_to_parametric = self._copy_state()
-
-        assert binary in ['0', '1'], f'Binary must be 0 or 1. Got "{binary}".'
-        assert (continuous.lower() in ['mean', 'median']) or continuous.isdigit(), f'Continuous must be mean, median, or a numeric value. Got "{continuous}".'
 
         for column in columns:
             if not df[column].isna().any():
@@ -468,20 +469,21 @@ class Model:
             else:
                 type_ = determine_variable_type(df[column])
             
+            # use the type_ to determine the value to fill in
+            # can be flexible that changes the type of the column
             if type_ == BINARY:
-                df.loc[df[column].isna(), column] = int(binary)  # always int
-
+                v = cast_to_appropriate_type(binary)
             elif type_ == CONTINUOUS:
                 if continuous.lower() == 'mean':
                     v = df[column].mean()  # float
                 elif continuous.lower() == 'median':
                     v = df[column].median()  # float
                 else:
-                    v = float(continuous)
-                df.loc[df[column].isna(), column] = cast_to_appropriate_type(v)  # can be converted to int
-
+                    v = cast_to_appropriate_type(continuous)
             elif type_ == CATEGORICAL:
-                df.loc[df[column].isna(), column] = categorical  # remains str, do not convert to int/float
+                v = cast_to_appropriate_type(categorical)
+
+            df.loc[df[column].isna(), column] = v
 
         self._move_state_forward(
             dataframe=df,
@@ -573,20 +575,6 @@ def cast_to_appropriate_type(value: Any) -> Any:
             v = int(v)
 
     return v
-
-
-def cast_to_categorical(value: Any) -> Union[str, float]:
-    v = value
-
-    if pd.isna(v):
-        return np.nan
-
-    if isinstance(v, str):
-        v = v.strip()
-        if v == '':
-            return np.nan
-
-    return str(v)
 
 
 def generate_column_to_summary(df: pd.DataFrame) -> Dict[str, str]:

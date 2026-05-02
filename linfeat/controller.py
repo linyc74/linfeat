@@ -286,6 +286,12 @@ class ActionUnivariableStatistics(Action):
         colors = self.view.color_dialog()
         if colors is None:
             return
+
+        n = self.model.get_number_of_missing_outcome(outcome=outcome)
+        if n > 0:
+            s = 's' if n > 1 else ''
+            self.view.info_message(msg=f'Outcome "{outcome}" has {n} missing value{s}\nDropping {n} sample{s} for univariable statistics')
+
         self.model.univariable_statistics(outdir=outdir, outcome=outcome, colors=colors)
         self.view.info_message(msg='Univariable statistics completed')
 

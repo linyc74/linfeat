@@ -318,12 +318,12 @@ class BinaryOrCategoricalOutcomeSummary:
         outcomes = self.outcome_to_count.keys()
         df = pd.DataFrame(columns=outcomes, dtype=int)
         for outcome in outcomes:
-            if f'Counts ({outcome})' not in stat:
+            if f'Counts ({outcome})' not in stat:  # no counts for this outcome, skip and fill in 0s later
                 continue
             count_str = stat[f'Counts ({outcome})']
-            count_items = count_str.split(' | ')
+            count_items = count_str.split(' | ')  # '0: 25 | 1: 25 | A: 25 | B: 25 | ...'
             for item in count_items:
-                key, value = item.split(': ')
+                key, value = item.split(': ')  # '0: 25' -> '0', '25'
                 df.loc[key, outcome] = int(value)
         df.fillna(0, inplace=True)
         return df

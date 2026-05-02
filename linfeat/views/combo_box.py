@@ -184,17 +184,17 @@ class FillMissingValuesDialog:
 
         self.combo_binary = QComboBox(parent=self.dialog)
         self.combo_binary.addItems(self.BINARY_OPTIONS)
-        self.combo_binary.setEditable(False)  # values other than 0 or 1 are not allowed for binary variables
+        self.combo_binary.setEditable(True)
         self.combo_binary.setCurrentText(self.BINARY_OPTIONS[0])
 
         self.combo_continuous = QComboBox(parent=self.dialog)
         self.combo_continuous.addItems(self.CONTINUOUS_OPTIONS)
-        self.combo_continuous.setEditable(True)  # user can input any numeric value for continuous variables
+        self.combo_continuous.setEditable(True)
         self.combo_continuous.setCurrentText(self.CONTINUOUS_OPTIONS[0])
 
         self.combo_categorical = QComboBox(parent=self.dialog)
         self.combo_categorical.addItems(self.CATEGORICAL_OPTIONS)
-        self.combo_categorical.setEditable(True)  # user can input any value (as string) for categorical variables
+        self.combo_categorical.setEditable(True)
         self.combo_categorical.setCurrentText(self.CATEGORICAL_OPTIONS[0])
 
         self.layout.addRow('Binary:', self.combo_binary)
