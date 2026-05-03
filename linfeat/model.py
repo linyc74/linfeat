@@ -378,6 +378,13 @@ class Model:
     def get_number_of_missing_outcome(self, outcome: str) -> int:
         return self.dataframe[outcome].isna().sum()
 
+    def get_categorical_columns(self) -> List[str]:
+        ret = []
+        for c in self.dataframe.columns:
+            if c in self.forced_categorical_columns or determine_variable_type(self.dataframe[c]) == CATEGORICAL:
+                ret.append(c)
+        return ret
+
     def univariable_statistics(self, outdir: str, outcome: str, colors: List[str]):
         df = self.dataframe.copy()
 
@@ -417,10 +424,37 @@ class Model:
         )
 
     def multivariable_regression(self, outdir: str, outcome: str):
-        df = self.dataframe.copy().astype(float)
+        df = self.dataframe.copy()
+
+        # cast outcome to float
+        if outcome in self.forced_categorical_columns or determine_variable_type(df[outcome]) == CATEGORICAL:
+            raise ValueError(f'Outcome "{outcome}" is categorical, not supported for multivariable regression.')
+        df[outcome] = df[outcome].astype(float)
+
+        # drop missing outcome
+        n = len(df)
+        df = df[df[outcome].notna()]
+        missing = n - len(df)
+        if missing > 0:
+            s = 's' if missing > 1 else ''
+            print(f'Dropping {missing} sample{s} with missing outcome "{outcome}" for multivariable regression.')
+
+        # independent variables: binary and continuous
+        variables = []
+        for c in df.columns:
+            if c == outcome:
+                continue
+
+            type_ = determine_variable_type(df[c])
+            if type_ == CATEGORICAL or c in self.forced_categorical_columns:
+                continue
+
+            df[c] = df[c].astype(float)  # just cast both binary and continuous variables to float
+            variables.append(c)
+
         MultivariableRegression().main(
             df=df,
-            variables=[c for c in df.columns if c != outcome],
+            variables=variables,
             outcome=outcome,
             outdir=outdir,
         )

@@ -306,6 +306,17 @@ class ActionMultivariableRegression(Action):
         outcome = self.view.select_outcome_dialog()
         if outcome is None:
             return
+
+        categorical_columns = self.model.get_categorical_columns()
+        if outcome in categorical_columns:
+            self.view.error_message(msg=f'Outcome "{outcome}" is categorical, not supported for multivariable regression')
+            return
+        
+        n = self.model.get_number_of_missing_outcome(outcome=outcome)
+        if n > 0:
+            s = 's' if n > 1 else ''
+            self.view.info_message(msg=f'Outcome "{outcome}" has {n} missing value{s}\nDropping {n} sample{s} for multivariable regression')
+
         self.model.multivariable_regression(outdir=outdir, outcome=outcome)
         self.view.info_message(msg='Multivariable regression completed')
 
