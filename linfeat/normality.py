@@ -96,7 +96,7 @@ class Normality:
     def write_summary(self):
         passed = self.stats_df[self.stats_df['Pass Normality Test']]['Variable'].tolist()
         failed = self.stats_df[~self.stats_df['Pass Normality Test']]['Variable'].tolist()
-        with open(f'{self.outdir}/summary.txt', 'w', encoding='utf-8-sig') as fh:
+        with open(f'{self.outdir}/summary.txt', 'w', encoding='utf-8') as fh:
             fh.write(f'Shapiro-Wilk p-value threshold: {self.shapiro_p_threshold}\n')
             fh.write(f'Kolmogorov-Smirnov p-value threshold: {self.kolmogorov_p_threshold}\n')
             fh.write(f'Skewness threshold: {self.skewness_threshold}\n')
