@@ -44,18 +44,19 @@ class Normality:
 
         self.stats_data = []
         for variable in self.variables:
-            if type_of(df[variable]) != CONTINUOUS:
+            series = df[variable].dropna()
+            if type_of(series) != CONTINUOUS:
                 print(f'Warning: Variable "{variable}" is not continuous. Skip normality test.')
                 continue
 
-            _, shapiro_p = shapiro(df[variable])
+            _, shapiro_p = shapiro(series)
 
-            mu = df[variable].mean()
-            sigma = df[variable].std()
-            _, kolmogorov_p = kstest(df[variable], 'norm', args=(mu, sigma))
+            mu = series.mean()
+            sigma = series.std()
+            _, kolmogorov_p = kstest(series, 'norm', args=(mu, sigma))
             
-            skewness = skew(df[variable], bias=False, nan_policy='omit')
-            excess_kurtosis = kurtosis(df[variable], fisher=True, bias=False, nan_policy='omit')
+            skewness = skew(series, bias=False, nan_policy='omit')
+            excess_kurtosis = kurtosis(series, fisher=True, bias=False, nan_policy='omit')
             
             self.stats_data.append({
                 'Variable': variable,

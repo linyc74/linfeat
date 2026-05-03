@@ -180,7 +180,8 @@ class Model:
                     forced_categorical_columns.remove(c)
                 if c in column_to_parametric:
                     column_to_parametric.pop(c)
-            
+        
+        column_to_parametric = regulate_parametric_properties(df, column_to_parametric)
         self._move_state_forward(
             dataframe=df,
             forced_categorical_columns=forced_categorical_columns,
@@ -205,8 +206,9 @@ class Model:
         for key, value in attributes.items():
             if key not in df.columns:
                 raise ValueError(f'Column "{key}" not found in dataframe')
-            df.loc[row, key] = cast_to_appropriate_type(value)
+            df.loc[row, key] = cast_to_appropriate_type(value)  # could alter the type of the column
 
+        column_to_parametric = regulate_parametric_properties(df, column_to_parametric)  # update parametric properties because column types might be altered
         self._move_state_forward(
             dataframe=df,
             forced_categorical_columns=forced_categorical_columns,
@@ -217,10 +219,11 @@ class Model:
 
         row = {}
         for key, value in attributes.items():
-            row[key] = cast_to_appropriate_type(value)
+            row[key] = cast_to_appropriate_type(value)  # could alter the type of the column
         row = pd.Series(data=row, dtype=object)
         df = append(df, row)
 
+        column_to_parametric = regulate_parametric_properties(df, column_to_parametric)  # update parametric properties because column types might be altered
         self._move_state_forward(
             dataframe=df,
             forced_categorical_columns=forced_categorical_columns,
@@ -229,8 +232,9 @@ class Model:
     def update_cell(self, row: int, column: str, value: Any):
         df, forced_categorical_columns, column_to_parametric = self._copy_state()
 
-        df.loc[row, column] = cast_to_appropriate_type(value)
+        df.loc[row, column] = cast_to_appropriate_type(value)  # could alter the type of the column
 
+        column_to_parametric = regulate_parametric_properties(df, column_to_parametric)  # update parametric properties because column types might be altered
         self._move_state_forward(
             dataframe=df,
             forced_categorical_columns=forced_categorical_columns,
@@ -253,17 +257,17 @@ class Model:
                 if text.lower() in str(self.dataframe.iloc[r, c]).lower():
                     return r, self.dataframe.columns[c]
 
-    def set_parametric_properties(self, column_to_parametric: Dict[str, bool]):
+    def set_parametric_properties(self, variable_to_parametric: Dict[str, bool]):
         df, forced_categorical_columns, column_to_parametric = self._copy_state()
 
-        for c, parametric in column_to_parametric.items():
-            if c in forced_categorical_columns:
+        for variable, parametric in variable_to_parametric.items():
+            if variable in forced_categorical_columns:
                 # this is a forced categorical variable
                 # do not change its parametric property which might be already set by the user
                 continue
-            elif determine_variable_type(df[c]) == CONTINUOUS:
+            elif determine_variable_type(df[variable]) == CONTINUOUS:
                 # only continous variable can be defined as parametric or nonparametric
-                column_to_parametric[c] = parametric
+                column_to_parametric[variable] = parametric
         
         if column_to_parametric == self.column_to_parametric:
             # no change, do not need to add to undo cache
@@ -485,6 +489,7 @@ class Model:
 
             df.loc[df[column].isna(), column] = v
 
+        column_to_parametric = regulate_parametric_properties(df, column_to_parametric)  # update parametric properties because column types might be altered
         self._move_state_forward(
             dataframe=df,
             forced_categorical_columns=forced_categorical_columns,
@@ -595,3 +600,18 @@ def generate_column_to_summary(df: pd.DataFrame) -> Dict[str, str]:
             raise ValueError(f'Unknown variable type "{type_}" of the column "{column}"')
         ret[column] = summary.strip()
     return ret
+
+
+def regulate_parametric_properties(
+        dataframe: pd.DataFrame,
+        column_to_parametric: Dict[str, bool]) -> Dict[str, bool]:
+    """
+    Whether a column can be parametric or not depends on the values of the column.
+    If a column's variable type is NOT continuous (maybe modified by the user), then set its parametric property to False.
+    """
+    assert set(dataframe.columns) == set(column_to_parametric.keys()), 'The columns in the dataframe and the column_to_parametric dictionary must match.'
+
+    for column in column_to_parametric.keys():
+        if determine_variable_type(dataframe[column]) != CONTINUOUS:
+            column_to_parametric[column] = False
+    return column_to_parametric

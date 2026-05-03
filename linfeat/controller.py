@@ -271,7 +271,8 @@ class ActionSetParametricVariables(Action):
         variable_to_parametric = self.view.set_parametric_variables_dialog()
         if variable_to_parametric is None:
             return
-        self.model.set_parametric_properties(column_to_parametric=variable_to_parametric)
+        self.model.set_parametric_properties(variable_to_parametric=variable_to_parametric)
+        self.view.refresh_table()
 
 
 class ActionUnivariableStatistics(Action):
