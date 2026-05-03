@@ -425,4 +425,4 @@ class LogisticStepwiseFeatureSelection:
             'test_loss': 'Test Log Loss',
             'test_loss_std': 'Test Log Loss Std',
         })
-        df.to_csv(f'{self.param.outdir}/stepwise_results.csv')
+        df.to_csv(f'{self.param.outdir}/stepwise_results.csv', encoding='utf-8-sig')

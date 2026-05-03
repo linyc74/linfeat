@@ -352,4 +352,4 @@ class LinearStepwiseFeatureSelection:
             'test_mse': 'Test MSE',
             'test_mse_std': 'Test MSE SD',
         })
-        df.to_csv(f'{self.param.outdir}/stepwise_results.csv')
+        df.to_csv(f'{self.param.outdir}/stepwise_results.csv', encoding='utf-8-sig')

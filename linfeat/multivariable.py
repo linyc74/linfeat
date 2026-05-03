@@ -85,7 +85,7 @@ class MultivariableRegression:
             f'',
             str(self.model.summary()),
         ]
-        with open(f'{self.outdir}/multivariable_regression.txt', 'w') as f:
+        with open(f'{self.outdir}/multivariable_regression.txt', 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
 
 
