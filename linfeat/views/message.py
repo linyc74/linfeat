@@ -1,4 +1,5 @@
 from typing import Type
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
 
@@ -54,6 +55,7 @@ class UnsavedDataMessage(Message):
     def __init__(self, view: Type[QWidget]):
         super().__init__(view=view)
         self.box.setStandardButtons(QMessageBox.Save | QMessageBox.No | QMessageBox.Cancel)
+        self.box.button(QMessageBox.No).setText("Don't Save")
         self.box.setDefaultButton(QMessageBox.Cancel)
 
     def __call__(self) -> int:
