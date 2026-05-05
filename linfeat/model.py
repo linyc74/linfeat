@@ -122,8 +122,31 @@ class Model:
     def get_data_packet(self) -> DataPacket:
         df, forced_categorical_columns, column_to_parametric = self._copy_state()
         column_to_type = {c: determine_variable_type(df[c]) for c in df.columns}
-        column_to_summary = generate_column_to_summary(df)
+        column_to_summary = self._generate_column_to_summary()
         return DataPacket(df, column_to_type, column_to_parametric, forced_categorical_columns, column_to_summary)
+
+    def _generate_column_to_summary(self) -> Dict[str, str]:
+        df, forced_categorical_columns, column_to_parametric = self._copy_state()
+        ret = {}
+        for column in df.columns:
+            if column in forced_categorical_columns:
+                type_ = CATEGORICAL
+            else:
+                type_ = determine_variable_type(df[column])
+            summary = f'{column}\n\n{type_.capitalize()} variable\n\n'
+            if type_ in [BINARY, CATEGORICAL]:
+                for value, count in df[column].value_counts().to_dict().items():
+                    summary += f'{value}: {count}\n'
+                summary += f'\nN: {df[column].count()}'
+            elif type_ == CONTINUOUS:
+                summary += f'Mean ± SD: {df[column].mean():.3g} ± {df[column].std():.3g}\n'
+                summary += f'Min: {df[column].min():.3g}\n'
+                summary += f'Max: {df[column].max():.3g}\n'
+                summary += f'N: {df[column].count()}'
+            else:
+                raise ValueError(f'Unknown variable type "{type_}" of the column "{column}"')
+            ret[column] = summary.strip()
+        return ret
 
     def sort_dataframe(
             self,
@@ -614,26 +637,6 @@ def cast_to_appropriate_type(value: Any) -> Any:
             v = int(v)
 
     return v
-
-
-def generate_column_to_summary(df: pd.DataFrame) -> Dict[str, str]:
-    ret = {}
-    for column in df.columns:
-        type_ = determine_variable_type(df[column])
-        summary = f'{column}\n\n{type_.capitalize()} variable\n\n'
-        if type_ in [BINARY, CATEGORICAL]:
-            for value, count in df[column].value_counts().to_dict().items():
-                summary += f'{value}: {count}\n'
-            summary += f'\nN: {df[column].count()}'
-        elif type_ == CONTINUOUS:
-            summary += f'Mean ± SD: {df[column].mean():.3g} ± {df[column].std():.3g}\n'
-            summary += f'Min: {df[column].min():.3g}\n'
-            summary += f'Max: {df[column].max():.3g}\n'
-            summary += f'N: {df[column].count()}'
-        else:
-            raise ValueError(f'Unknown variable type "{type_}" of the column "{column}"')
-        ret[column] = summary.strip()
-    return ret
 
 
 def regulate_parametric_properties(
