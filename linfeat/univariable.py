@@ -414,7 +414,7 @@ class StackedBarPlot:
 
     WIDTH_PADDING = 3.6 / 2.54
     WIDTH_PER_GROUP = 0.75 / 2.54
-    FIXED_HEIGHT = 5 / 2.54
+    BASE_HEIGHT = 5 / 2.54
     FONT_SIZE = 6
     BAR_WIDTH = 0.6
     Y_LABEL = 'Count'
@@ -423,6 +423,8 @@ class StackedBarPlot:
     colors: List[Tuple[float, float, float, float]]
     title: str
     png: str
+
+    rotate_x_labels: bool
 
     def main(
             self,
@@ -447,14 +449,25 @@ class StackedBarPlot:
 
         matplotlib.rc('axes', linewidth=0.5)
 
+        # width
         n_groups = len(self.df.columns)
-
         outcome_name = self.df.index.name
         char_width = 0.1219  # cm
         legend_text_width = len(outcome_name) * char_width / 2.54
-
         width = (n_groups * self.WIDTH_PER_GROUP) + self.WIDTH_PADDING + legend_text_width
-        plt.figure(figsize=(width, self.FIXED_HEIGHT))
+
+        # height
+        height = self.BASE_HEIGHT
+        longest_column_name = max(len(name) for name in self.df.columns)
+        if longest_column_name >= 4:
+            self.rotate_x_labels = True
+            char_height = 0.1575  # cm
+            height += (longest_column_name) * char_height / 2.54
+        else:
+            self.rotate_x_labels = False
+            height += 0.2 / 2.54
+
+        plt.figure(figsize=(width, height))
 
     def plot(self):
         bottom = np.zeros(shape=len(self.df.columns))
@@ -478,6 +491,9 @@ class StackedBarPlot:
         plt.ylabel(self.Y_LABEL, fontsize=self.FONT_SIZE)
 
         plt.xlim(left=-1, right=len(self.df.columns))
+
+        if self.rotate_x_labels:
+            plt.xticks(rotation=90)
 
         plt.gca().xaxis.set_tick_params(width=0.5)
         plt.gca().yaxis.set_tick_params(width=0.5)

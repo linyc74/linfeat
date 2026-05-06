@@ -310,3 +310,24 @@ class TestStackedBarPlot(TestCase):
                 title='Title',
                 png=f'{self.outdir}/stacked_bar_plot_{n_groups}_groups.png'
             )
+
+    def test_rotate_x_labels(self):
+        for max_column_name_length in [1, 2, 3, 4, 10, 20, 30]:
+            m = max_column_name_length
+            count_df = pd.DataFrame(
+                columns=['A'*m, 'B'*m, 'C'*m, 'D'*m, 'E'*m, 'F'*m, 'G'*m, 'H'*m],
+                index=['Outcome 0', 'Outcome 1', 'Outcome 2'],
+                data=[
+                    [1, 2, 5, 6, 3, 2, 5, 6],
+                    [11, 6, 1, 10, 6, 6, 1, 8],
+                    [2, 3, 8, 0, 2, 3, 9, 2]
+                ],
+            )
+            count_df.index.name = 'Outcome'
+            count_df.columns.name = 'Group'
+            StackedBarPlot().main(
+                count_df=count_df,
+                colors=['lightgray', 'darkgray', 'lightblue', 'tomato'],
+                title='Title',
+                png=f'{self.outdir}/stacked_bar_plot_{m}_column_name_length.png'
+            )
