@@ -19,7 +19,7 @@ def resource_path(*parts: str) -> str:
     """Return an absolute path to a packaged resource.
 
     Args:
-        *parts: Path components under the resource root (e.g. ``('icon', 'logo.ico')``).
+        *parts: Path components under the resource root (e.g. ``('icon', 'LinFeat.png')``).
 
     Returns:
         Absolute filesystem path to the requested resource.
@@ -261,7 +261,7 @@ class View(QWidget):
         self.model = model
 
         self.setWindowTitle(f'{self.TITLE}')
-        icon_file = resource_path('icon', 'logo.ico')
+        icon_file = resource_path('icon', 'LinFeat.png')
         self.setWindowIcon(QIcon(icon_file))
         self.resize(self.WIDTH, self.HEIGHT)
 
