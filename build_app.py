@@ -97,7 +97,7 @@ setup(
     data_files=[],
     options={{
         'py2app': {{
-            'iconfile': './icon/LinFeat.png',
+            'iconfile': './icon/LinFeat.ico',
             'resources': ['./icon'],
             'packages': ['cffi', 'PyQt5']
         }}
@@ -122,7 +122,7 @@ setup(
             os.remove(file)
 
     def build_windows_exe(self):
-        cmd = f'pyinstaller --clean --onedir --icon="icon/LinFeat.png" --add-data="icon;icon" {self.entrypoint_py}'
+        cmd = f'pyinstaller --clean --onedir --icon="icon/LinFeat.ico" --add-data="icon;icon" {self.entrypoint_py}'
         subprocess.check_call(cmd, shell=True)
 
         f = self.entrypoint_py[:-3]
