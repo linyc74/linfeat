@@ -8,8 +8,8 @@ class TestMultivariableRegression(TestCase):
     def setUp(self):
         self.set_up(py_path=__file__)
 
-    # def tearDown(self):
-    #     self.tear_down()
+    def tearDown(self):
+        self.tear_down()
 
     def test_ols_regression(self):
         MultivariableRegression().main(

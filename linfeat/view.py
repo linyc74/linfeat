@@ -287,6 +287,9 @@ class View(QWidget):
         for name, label in self.BUTTON_NAME_TO_LABEL.items():
             setattr(self, f'button_{name}', QPushButton(label))
             button = getattr(self, f'button_{name}')
+            png = resource_path('icon', f'{name}.png')
+            if exists(png):
+                button.setIcon(QIcon(png))
             pos = self.BUTTON_NAME_TO_POSITION[name]
             self.button_grid.addWidget(button, *pos)
 

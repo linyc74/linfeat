@@ -459,7 +459,7 @@ class StackedBarPlot:
         # height
         height = self.BASE_HEIGHT
         longest_column_name = max(len(name) for name in self.df.columns)
-        if longest_column_name >= 4:
+        if longest_column_name >= 5:
             self.rotate_x_labels = True
             char_height = 0.1575  # cm
             height += (longest_column_name) * char_height / 2.54
