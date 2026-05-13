@@ -430,7 +430,10 @@ class Model:
                 else:
                     df[c] = df[c].astype(int)  # no missing, convert all to int
             elif type_ == CATEGORICAL:
-                df[c] = df[c].astype(str)
+                df[c] = df[c].where(
+                    cond=df[c].isna(),  # any where that's np.nan, keep as np.nan
+                    other=df[c].astype(str)  # any where that's not np.nan, convert to str
+                )
             elif type_ == CONTINUOUS:
                 df[c] = df[c].astype(float)
 

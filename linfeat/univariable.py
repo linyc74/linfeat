@@ -105,6 +105,12 @@ class UnivariableStatistics:
     def categorical_vs_categorical(self, x: str, y: str):
         df = self.df.copy()[[x, y]].dropna(how='any')
 
+        if df[x].dtype == 'float64' and sorted(df[x].unique()) == [0.0, 1.0]:
+            # this happens when missing values (np.nan) are present,
+            # making a binary variable casted as float
+            # now there is no missing values, so we can cast to int
+            df[x] = df[x].astype(int)
+
         contingency_df = create_contingency_table(df=df, x=x, y=y)
 
         a, b = contingency_df.shape
@@ -316,7 +322,7 @@ class BinaryOrCategoricalOutcomeSummary:
 
     def _confusion_matrix(self, stat: Dict[str, Any]) -> pd.DataFrame:
         outcomes = self.outcome_to_count.keys()
-        df = pd.DataFrame(columns=outcomes, dtype=int)
+        df = pd.DataFrame(columns=outcomes)
         for outcome in outcomes:
             if f'Counts ({outcome})' not in stat:  # no counts for this outcome, skip and fill in 0s later
                 continue
@@ -326,6 +332,7 @@ class BinaryOrCategoricalOutcomeSummary:
                 key, value = item.split(': ')  # '0: 25' -> '0', '25'
                 df.loc[key, outcome] = int(value)
         df.fillna(0, inplace=True)
+        df = df.astype(int)  # counts are integers
         return df
 
     def categorical_vs_continuous_summary(self, stat: Dict[str, Any]):
