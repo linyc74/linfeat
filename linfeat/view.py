@@ -190,8 +190,8 @@ class View(QWidget):
 
         'undo': 'Undo',
         'redo': 'Redo',
-        'sort_ascending': 'Sort (A to Z)',
-        'sort_descending': 'Sort (Z to A)',
+        'sort_ascending': 'Sort A→Z',
+        'sort_descending': 'Sort Z→A',
 
         'delete_rows': 'Delete Samples',
         'add_new_row': 'Add New Sample',
@@ -201,13 +201,13 @@ class View(QWidget):
         'delete_columns': 'Delete Columns',
         'add_new_column': 'Add New Column',
         'rename_column': 'Rename Column',
+        'fill_missing_values': 'Fill Missing Values',
 
         'stratify_convert': 'Stratify / Convert',
         'force_categorical': 'Set as Categorical',
         'unforce_categorical': 'Unset Categorical',
-        'fill_missing_values': 'Fill Missing Values',
-
         'set_parametric_variables': 'Set Parametric Variables',
+
         'normality_test': 'Normality Test',
         'univariable_statistics': 'Univariable Statistics',
         'multivariable_regression': 'Multivariable Regression',
@@ -223,26 +223,40 @@ class View(QWidget):
         'sort_ascending': (2, 1),
         'sort_descending': (3, 1),
 
-        'delete_rows': (0, 2),
-        'add_new_row': (1, 2),
-        'edit_row': (2, 2),
-        'edit_cell': (3, 2),
+        'delete_rows': (0, 3),
+        'add_new_row': (1, 3),
+        'edit_row': (2, 3),
+        'edit_cell': (3, 3),
 
-        'delete_columns': (0, 3),
-        'add_new_column': (1, 3),
-        'rename_column': (2, 3),
-
-        'stratify_convert': (0, 4),
-        'force_categorical': (1, 4),
-        'unforce_categorical': (2, 4),
+        'delete_columns': (0, 4),
+        'add_new_column': (1, 4),
+        'rename_column': (2, 4),
         'fill_missing_values': (3, 4),
 
-        'set_parametric_variables': (0, 5),
-        'normality_test': (1, 5),
-        'univariable_statistics': (2, 5),
-        'multivariable_regression': (3, 5),
+        'stratify_convert': (0, 6),
+        'force_categorical': (1, 6),
+        'unforce_categorical': (2, 6),
+        'set_parametric_variables': (3, 6),
+
+        'normality_test': (0, 7),
+        'univariable_statistics': (1, 7),
+        'multivariable_regression': (2, 7),
 
         # 'find': (0, 6),
+    }
+    BUTTON_GRID_COLUMN_TO_STRETCH_WIDTH = {
+        0: 4,
+        1: 4,
+        2: 1,  # separator
+        3: 6,
+        4: 6,
+        5: 1,  # separator
+        6: 6,
+        7: 8,
+    }
+    BUTTON_GRID_COLUMN_TO_MIN_WIDTH = {  # separator's width
+        2: 20,
+        5: 20,
     }
     SHORTCUT_NAME_TO_KEY_SEQUENCE = {
         'control_s': 'Ctrl+S',
@@ -292,6 +306,12 @@ class View(QWidget):
                 button.setIcon(QIcon(png))
             pos = self.BUTTON_NAME_TO_POSITION[name]
             self.button_grid.addWidget(button, *pos)
+        
+        for column, width in self.BUTTON_GRID_COLUMN_TO_STRETCH_WIDTH.items():
+            self.button_grid.setColumnStretch(column, width)
+        
+        for column, width in self.BUTTON_GRID_COLUMN_TO_MIN_WIDTH.items():
+            self.button_grid.setColumnMinimumWidth(column, width)
 
     def __init__shortcuts(self):
         for name, key_sequence in self.SHORTCUT_NAME_TO_KEY_SEQUENCE.items():
