@@ -206,7 +206,7 @@ class View(QWidget):
         'stratify_convert': 'Stratify / Convert',
         'force_categorical': 'Set as Categorical',
         'unforce_categorical': 'Unset Categorical',
-        'set_parametric_variables': 'Set Parametric Variables',
+        'set_parametric_variables': 'Set Parametric',
 
         'normality_test': 'Normality Test',
         'univariable_statistics': 'Univariable Statistics',
