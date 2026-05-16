@@ -24,6 +24,7 @@ test/*workdir*/
 # PyInstaller / py2app
 build/
 dist/
+.eggs/
 *.app/
 *.spec
 *.zip
