@@ -3,7 +3,7 @@ import pandas as pd
 from typing import Dict, Optional
 from .view import View
 from .model import Model
-from .basic import CONTINUOUS
+from .basic import CONTINUOUS, CATEGORICAL
 
 
 class Controller:
@@ -331,11 +331,18 @@ class ActionStratifyConvert(Action):
         column = columns[0]
 
         packet = self.model.get_data_packet()
-        df = packet.df
-        if packet.column_to_type[column] == CONTINUOUS:
-            self.stratify_continous_variable(df=df, column=column)
+
+        if column in packet.forced_categorical_columns:  # overrides the actual type of the column
+            is_continuous = False
+        elif packet.column_to_type[column] == CONTINUOUS:  # actually continuous
+            is_continuous = True
+        else:  # actually categorical or binary
+            is_continuous = False
+
+        if is_continuous:
+            self.stratify_continous_variable(df=packet.df, column=column)
         else:
-            self.convert_categorical_variable(df=df, column=column)
+            self.convert_categorical_variable(df=packet.df, column=column)
 
     def stratify_continous_variable(self, df: pd.DataFrame, column: str):
         cutoffs = self.view.stratify_dialog(minimum=df[column].min(), maximum=df[column].max())
