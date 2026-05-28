@@ -252,7 +252,7 @@ class View(QWidget):
         4: 6,
         5: 1,  # separator
         6: 6,
-        7: 8,
+        7: 6,
     }
     BUTTON_GRID_COLUMN_TO_MIN_WIDTH = {  # separator's width
         2: 20,
