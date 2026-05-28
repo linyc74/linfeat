@@ -13,6 +13,11 @@ from scipy.stats import fisher_exact, chi2_contingency, ttest_ind, mannwhitneyu,
 from .basic import determine_variable_type as type_of
 from .basic import BINARY, CONTINUOUS, CATEGORICAL, config_matplotlib_font_for_language
 
+from openpyxl.styles import Border, Side, PatternFill, Alignment, Font
+from openpyxl.utils import get_column_letter
+
+
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -285,6 +290,8 @@ class BinaryOrCategoricalOutcomeSummary:
             self.summary_df.drop(columns=['Odds Ratio (95% CI)'], inplace=True)  # no OR, no need to show the column
 
         self.summary_df.to_csv(f'{self.outdir}/summary.csv', encoding='utf-8-sig', index=False)
+
+        self.write_excel()
     
     def init_summary_df(self):
         columns = ['Variable']
@@ -353,6 +360,58 @@ class BinaryOrCategoricalOutcomeSummary:
         for outcome, count in self.outcome_to_count.items():
             mapping = {outcome: f'{outcome} (N = {count})'}
             self.summary_df.rename(columns=mapping, inplace=True)
+    
+    def write_excel(self):
+        df = self.summary_df
+
+        has_pvalue_rows = []
+        for idx, row in df.iterrows():
+            if pd.notna(row['p-value']):
+                has_pvalue_rows.append(idx + 2)  # first row in pandas is 0, first row in Excel is 2
+
+        with pd.ExcelWriter(f'{self.outdir}/summary.xlsx', engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Summary', index=False)
+
+            ws = writer.sheets['Summary']
+            ws.sheet_view.showGridLines = False
+
+            left = Alignment(horizontal='left', vertical='center')
+            center = Alignment(horizontal='center', vertical='center')
+            right = Alignment(horizontal='right', vertical='center')
+            times_new_roman = Font(name='Times New Roman', size=12)
+            times_new_roman_bold = Font(name='Times New Roman', size=12, bold=True)
+            thin_black = Side(style='thin', color='000000')
+
+            for row in ws.iter_rows():
+                for cell in row:
+                    is_header_row = cell.row == 1
+                    is_first_column = cell.column == 1
+                    is_pvalue_row = cell.row in has_pvalue_rows
+
+                    if is_header_row:
+                        cell.font = times_new_roman_bold
+                    else:
+                        cell.font = times_new_roman
+
+                    if is_first_column:
+                        cell.alignment = left
+                    else:
+                        cell.alignment = center
+
+                    if is_pvalue_row:
+                        cell.border = Border(top=thin_black)
+                    else:
+                        if is_first_column and not is_header_row:
+                            cell.alignment = right
+            
+            # auto resize column widths
+            for column in ws.iter_cols():
+                max_length = 0
+                for cell in column:
+                    if pd.notna(cell.value):
+                        max_length = max(max_length, len(str(cell.value)))
+                column_letter = get_column_letter(column[0].column)
+                ws.column_dimensions[column_letter].width = max_length + 2
 
 
 def create_contingency_table(df: pd.DataFrame, x: str, y: str) -> pd.DataFrame:
