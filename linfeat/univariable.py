@@ -289,8 +289,6 @@ class BinaryOrCategoricalOutcomeSummary:
         if self.summary_df['Odds Ratio (95% CI)'].isna().all():
             self.summary_df.drop(columns=['Odds Ratio (95% CI)'], inplace=True)  # no OR, no need to show the column
 
-        self.summary_df.to_csv(f'{self.outdir}/summary.csv', encoding='utf-8-sig', index=False)
-
         self.write_excel()
     
     def init_summary_df(self):
