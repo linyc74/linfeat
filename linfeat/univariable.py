@@ -400,7 +400,7 @@ class BinaryOrCategoricalOutcomeSummary:
                         cell.border = Border(top=thin_black)
                     else:
                         if is_first_column and not is_header_row:
-                            cell.alignment = right
+                            cell.alignment = right  # these are category names of binary / categorical variables
             
             # auto resize column widths
             for column in ws.iter_cols():
