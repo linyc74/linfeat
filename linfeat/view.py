@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from typing import List, Tuple
 from os.path import dirname, exists, expanduser, normpath, join
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QObject
@@ -96,10 +97,13 @@ class Table(QTableWidget):
         matrix = df.to_numpy()
 
         # fill in values
+        columns = np.array(df.columns)
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
                 value = matrix[i, j]
                 item = QTableWidgetItem(value)
+                summary = column_to_summary.get(columns[j], '')
+                item.setToolTip(summary)
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)  # makes the item immutable, i.e. user cannot edit it
                 self.setItem(i, j, item)
 
