@@ -26,4 +26,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # python package.py sdist && rm -r linfeat.egg-info
+    # cp package.py setup.py && python setup.py sdist && mv dist/linfeat-*.tar.gz . && rm -r linfeat.egg-info setup.py dist
