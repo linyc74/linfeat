@@ -130,7 +130,7 @@ class SelectOutcomeDialog:
 
         self.dialog = QDialog(parent=self.view)
         self.dialog.setWindowTitle('Select Outcome')
-        self.dialog.resize(500, 600)
+        self.dialog.resize(400, 200)
 
         self.combo_box = QComboBox(parent=self.dialog)
 
@@ -265,3 +265,41 @@ class NormalityTestDialog:
                 ret.append(combo.currentText())
             return tuple(ret)
         return None
+
+
+class SelectSheetDialog:
+
+    view: Type[QWidget]
+
+    dialog: QDialog
+    combo_box: QComboBox
+
+    def __init__(self, view: Type[QWidget]):
+        self.view = view
+
+        self.dialog = QDialog(parent=self.view)
+        self.dialog.setWindowTitle('Select Sheet')
+        self.dialog.resize(400, 200)
+
+        self.combo_box = QComboBox(parent=self.dialog)
+
+        btn_ok = QPushButton('OK')
+        btn_ok.clicked.connect(self.dialog.accept)
+        btn_cancel = QPushButton('Cancel')
+        btn_cancel.clicked.connect(self.dialog.reject)
+
+        button_row = QHBoxLayout()
+        button_row.addWidget(btn_ok)
+        button_row.addWidget(btn_cancel)
+
+        layout = QVBoxLayout(self.dialog)
+        layout.addWidget(self.combo_box)
+        layout.addLayout(button_row)
+
+    def __call__(self, sheet_names: List[str]) -> Optional[str]:
+        self.combo_box.clear()
+        self.combo_box.addItems(sheet_names)
+        if self.dialog.exec_() == QDialog.Accepted:
+            return self.combo_box.currentText()
+        else:
+            return None

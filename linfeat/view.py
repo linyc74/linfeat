@@ -13,7 +13,7 @@ from .views.stratify_convert import StratifyDialog, ConvertDialog
 from .views.file import OpenFileDialog, SaveAsFileDialog, OpenDirectoryDialog
 from .views.message import InfoMessage, ErrorMessage, YesNoMessage, UnsavedDataMessage
 from .views.line_edit import FindDialog, EditCellDialog, NewColumnNameDialog, RenameColumnDialog
-from .views.combo_box import EditRowDialog, SelectOutcomeDialog, FillMissingValuesDialog, NormalityTestDialog
+from .views.combo_box import EditRowDialog, SelectOutcomeDialog, FillMissingValuesDialog, NormalityTestDialog, SelectSheetDialog
 
 
 def resource_path(*parts: str) -> str:
@@ -338,7 +338,8 @@ class View(QWidget):
         self.select_outcome_dialog = SelectOutcomeDialog(self)
         self.fill_missing_values_dialog = FillMissingValuesDialog(self)
         self.normality_test_dialog = NormalityTestDialog(self)
-        
+        self.select_sheet_dialog = SelectSheetDialog(self)
+
         self.color_dialog = ColorDialog(self)
 
         self.stratify_dialog = StratifyDialog(self)

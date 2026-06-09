@@ -95,7 +95,17 @@ class ActionOpen(Action):
         file = self.view.open_file_dialog()
         if file == '':
             return
-        self.model.open(file=file)
+
+        sheet_name = 0  # the first sheet by default
+
+        if file.endswith('.xlsx'):
+            with pd.ExcelFile(file) as xlsx:
+                if len(xlsx.sheet_names) > 1:
+                    sheet_name = self.view.select_sheet_dialog(sheet_names=xlsx.sheet_names)
+                    if sheet_name is None:
+                        return
+
+        self.model.open(file=file, sheet_name=sheet_name)
         self.view.refresh_table()
 
 
@@ -103,10 +113,22 @@ class ActionOpenDroppedFile(Action):
 
     def __call__(self, file: str):  # override the parent class, to take the `file` argument
         try:
-            self.model.open(file=file)
-            self.view.refresh_table()
+            self.action(file=file)
         except Exception as e:
             self.view.error_message(msg=repr(e))
+    
+    def action(self, file: str):
+        sheet_name = 0  # the first sheet by default
+
+        if file.endswith('.xlsx'):
+            with pd.ExcelFile(file) as xlsx:
+                if len(xlsx.sheet_names) > 1:
+                    sheet_name = self.view.select_sheet_dialog(sheet_names=xlsx.sheet_names)
+                    if sheet_name is None:
+                        return
+
+        self.model.open(file=file, sheet_name=sheet_name)
+        self.view.refresh_table()
 
 
 class ActionSaveAs(Action):

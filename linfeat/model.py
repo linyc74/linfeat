@@ -87,9 +87,9 @@ class Model:
         self.forced_categorical_columns = forced_categorical_columns
         self.column_to_parametric = column_to_parametric
 
-    def open(self, file: str):
+    def open(self, file: str, sheet_name: Union[int, str] = 0):
         if file.endswith('.xlsx'):
-            df = pd.read_excel(file, keep_default_na=False, dtype=object)
+            df = pd.read_excel(file, sheet_name=sheet_name, keep_default_na=False, dtype=object)
         elif file.endswith('.csv'): 
             df = pd.read_csv(file, keep_default_na=False, dtype=object)
         else:  # assume tab-separated file
