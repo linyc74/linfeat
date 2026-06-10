@@ -56,8 +56,8 @@ class UnivariableStatistics:
 
         self.reorder_variables()
 
-        # all outcome values needs to be tracked across all variables
-        # because some variables may have missing values, shriking the number of outcome values
+        # the total outcome values need to be tracked across all variables
+        # because some variables may have missing values, shrinking the number of outcome values
         self.all_outcome_values = self.df[self.outcome].dropna().unique().tolist()
         if len(self.all_outcome_values) == 1:
             raise ValueError(f'Outcome "{self.outcome}" has only 1 value "{self.all_outcome_values[0]}", not supported for univariable statistics.')
@@ -310,7 +310,7 @@ class BinaryOrCategoricalOutcomeSummary:
         ci_high = stat.get('OR 95% CI Upper', np.nan)
 
         if pd.isna(p):
-            p = 'N/A'
+            p = 'N/A'  # cannot be empty, fill in 'N/A'
         elif p >= 0.001:
             p = f'{p:.3f}'
         else:
@@ -357,7 +357,7 @@ class BinaryOrCategoricalOutcomeSummary:
         p = stat['p-value']
 
         if pd.isna(p):
-            p = 'N/A'
+            p = 'N/A'  # cannot be empty, fill in 'N/A'
         elif p >= 0.001:
             p = f'{p:.3f}'
         else:
