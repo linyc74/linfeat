@@ -10,12 +10,10 @@ from statsmodels.stats.multitest import multipletests
 from typing import List, Tuple, Dict, Any, Optional, Union
 from scipy.stats.contingency import odds_ratio as scipy_odds_ratio
 from scipy.stats import fisher_exact, chi2_contingency, ttest_ind, mannwhitneyu, f_oneway, kruskal, pearsonr, spearmanr
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Border, Side, PatternFill, Alignment, Font
 from .basic import determine_variable_type as type_of
 from .basic import BINARY, CONTINUOUS, CATEGORICAL, config_matplotlib_font_for_language
-
-from openpyxl.styles import Border, Side, PatternFill, Alignment, Font
-from openpyxl.utils import get_column_letter
-
 
 
 import warnings
