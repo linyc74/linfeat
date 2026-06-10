@@ -32,6 +32,7 @@ class UnivariableStatistics:
     parametric_variables: List[str]
     colors: List[Tuple[float, float, float, float]]
 
+    all_outcome_values: List[str]
     stats_data: List[Dict[str, Any]]
     stats_df: pd.DataFrame
 
@@ -57,14 +58,16 @@ class UnivariableStatistics:
 
         self.reorder_variables()
 
+        # all outcome values needs to be tracked across all variables
+        # because some variables may have missing values, shriking the number of outcome values
+        self.all_outcome_values = self.df[self.outcome].dropna().unique().tolist()
+        if len(self.all_outcome_values) == 1:
+            raise ValueError(f'Outcome "{self.outcome}" has only 1 value "{self.all_outcome_values[0]}", not supported for univariable statistics.')
+
         self.stats_data = []
 
         if type_of(self.df[self.outcome]) in [BINARY, CATEGORICAL]:
-            outcome_values = self.df[self.outcome].dropna().unique()
-            if len(outcome_values) == 1:
-                raise ValueError(f'Outcome "{self.outcome}" has only 1 value "{outcome_values[0]}", not supported for univariable statistics.')
             self.binary_or_categorical_outcome()
-
         elif type_of(self.df[self.outcome]) == CONTINUOUS:
             self.continuous_outcome()
 
@@ -130,16 +133,19 @@ class UnivariableStatistics:
             }          
         elif a == 2 and b == 2:
             pvalue = fisher_exact(contingency_df).pvalue
-            odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
             row = {
                 'Statistical Test': 'Fisher\'s exact test',
                 'x': x,
                 'y': y,
                 'p-value': pvalue,
-                'Odds Ratio (OR)': odds_ratio,
-                'OR 95% CI Lower': ci_low,
-                'OR 95% CI Upper': ci_high,
             }
+            if len(self.all_outcome_values) == 2:  # only calculate OR when there are 2 outcome values
+                odds_ratio, ci_low, ci_high = calculate_odds_ratio(contingency_df)
+                row.update({
+                    'Odds Ratio (OR)': odds_ratio,
+                    'OR 95% CI Lower': ci_low,
+                    'OR 95% CI Upper': ci_high,
+                })
         else:
             chi2, pvalue, dof, expected = chi2_contingency(contingency_df)
             row = {

@@ -176,6 +176,20 @@ class TestUnivariableStatistics(TestCase):
             ],
             colors='Set2',
         )
+    
+    def test_3_shrink_to_2_groups(self):
+        UnivariableStatistics().main(
+            df=pd.read_csv(f'{self.indir}/3_shrink_to_2_groups.csv'),
+            variables=[
+                'Continuous Variable',
+                'Binary Variable',
+            ],
+            outcome='Group',
+            outdir=self.outdir,
+            parametric_outcome=False,
+            parametric_variables=[],
+            colors='Set2',
+        )
 
 
 class TestCreateContingencyTable(TestCase):
