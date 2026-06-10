@@ -9,8 +9,8 @@ class TestUnivariableStatistics(TestCase):
     def setUp(self):
         self.set_up(py_path=__file__)
         
-    def tearDown(self):
-        self.tear_down()
+    # def tearDown(self):
+    #     self.tear_down()
     
     def test_binary_outcome(self):
         UnivariableStatistics().main(
@@ -183,6 +183,7 @@ class TestUnivariableStatistics(TestCase):
             variables=[
                 'Continuous Variable',
                 'Binary Variable',
+                'Categorical Variable',
             ],
             outcome='Group',
             outdir=self.outdir,

@@ -126,7 +126,7 @@ class UnivariableStatistics:
             print(f'Warning: x="{x}", y="{y}", contingency table is {a} x {b}. Skip test.')
             pvalue = np.nan
             row = {
-                'Statistical Test': 'No test',
+                'Statistical Test': 'No test (Categorical vs. Categorical)',
                 'x': x,
                 'y': y,
                 'p-value': pvalue,
@@ -176,15 +176,15 @@ class UnivariableStatistics:
         
         df.sort_values(by=x, inplace=True, ascending=True)
         
-        group_names = self.df[x].unique()  # list of strings
-        group_values = [self.df[y][self.df[x] == name] for name in group_names]  # list of vectors
+        group_names = df[x].unique()  # list of strings
+        group_values = [df[y][df[x] == name] for name in group_names]  # list of vectors
         group_means = [group.mean() for group in group_values]  # list of scalars
         group_std_devs = [group.std() for group in group_values]  # list of scalars
         group_counts = [group.count() for group in group_values]  # list of scalars
 
         if len(group_names) == 1:
             print(f'Warning: x="{x}", y="{y}", only one category. Skip test.')
-            test_name = 'No test'
+            test_name = 'No test (Categorical vs. Continuous)'
             pvalue = np.nan
         elif len(group_names) == 2:
             test_name = 'Student\'s t-test' if parametric else 'Mann-Whitney U test'
@@ -284,7 +284,7 @@ class BinaryOrCategoricalOutcomeSummary:
 
         for stat in self.stats_data:
             test = stat['Statistical Test']
-            if test in ['Fisher\'s exact test', 'Chi-square test']:
+            if test in ['No test (Categorical vs. Categorical)', 'Fisher\'s exact test', 'Chi-square test']:
                 self.categorical_vs_categorical_summary(stat)
             elif test in ['Student\'s t-test', 'Mann-Whitney U test', 'ANOVA', 'Kruskal-Wallis test']:
                 self.categorical_vs_continuous_summary(stat)
@@ -311,8 +311,16 @@ class BinaryOrCategoricalOutcomeSummary:
         ci_low = stat.get('OR 95% CI Lower', np.nan)
         ci_high = stat.get('OR 95% CI Upper', np.nan)
 
+        if pd.isna(p):
+            p = 'N/A'
+        elif p >= 0.001:
+            p = f'{p:.3f}'
+        else:
+            p = '< 0.001'
+
         self.summary_df.loc[self.idx, 'Variable'] = variable
-        self.summary_df.loc[self.idx, 'p-value'] = f'{p:.3f}' if p >= 0.001 else '< 0.001'
+        self.summary_df.loc[self.idx, 'p-value'] = p
+
         if pd.notna(OR):  # Chi-square test has no OR
             self.summary_df.loc[self.idx, 'Odds Ratio (95% CI)'] = f'{OR:.2f} ({ci_low:.2f}, {ci_high:.2f})'
         
@@ -349,13 +357,22 @@ class BinaryOrCategoricalOutcomeSummary:
     def categorical_vs_continuous_summary(self, stat: Dict[str, Any]):
         variable = stat['y']
         p = stat['p-value']
+
+        if pd.isna(p):
+            p = 'N/A'
+        elif p >= 0.001:
+            p = f'{p:.3f}'
+        else:
+            p = '< 0.001'
+
         self.summary_df.loc[self.idx, 'Variable'] = stat['y']
-        self.summary_df.loc[self.idx, 'p-value'] = f'{p:.3f}' if p >= 0.001 else '< 0.001'
+        self.summary_df.loc[self.idx, 'p-value'] = p
 
         for outcome in self.outcome_to_count.keys():
-            mean = stat[f'Mean ({outcome})']
-            std = stat[f'Std. Dev. ({outcome})']
-            count = stat[f'Counts ({outcome})']
+            # sometimes the outcome can be missing due to missing values in the variable
+            mean = stat.get(f'Mean ({outcome})', np.nan)
+            std = stat.get(f'Std. Dev. ({outcome})', np.nan)
+            count = stat.get(f'Counts ({outcome})', 0)
             self.summary_df.loc[self.idx, outcome] = f'{mean:.2f} ± {std:.2f} (N = {count})'
         
         self.idx += 1
